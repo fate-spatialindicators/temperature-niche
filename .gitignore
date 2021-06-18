@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+AK_BTS_all_spp.rds
+*.rds
+*.RDS

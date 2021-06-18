@@ -1,0 +1,8 @@
+.DS_Store
+combined_species.csv
+goa_output.csv
+goa_output.rds
+summary_statistics_goa.csv
+summary_statistics_wc.csv
+wc_output.csv
+wc_output.rds

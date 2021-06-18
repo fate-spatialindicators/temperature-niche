@@ -1,0 +1,270 @@
+---
+title: "Supplemental Information"
+author: "EW"
+date: "3/1/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning = FALSE)
+library(dplyr)
+library(sdmTMB)
+library(sp)
+library(ggplot2)
+library(here)
+```
+
+## Empirical observations of temperature
+
+Each survey included in our analysis has unique distributions of temperature, and relationships between temperature and depth. Temperature in the Gulf of Alaska appears much more normally distributed, while temperature along the California-Oregon-Washington coast is more skewed. 
+
+```{r temp-plot, echo=FALSE}
+cow = readRDS(here("survey_data/joined_nwfsc_data.rds"))
+goa = readRDS(here("survey_data/joined_goa_data.rds"))
+
+cow = dplyr::filter(cow, scientific_name == unique(cow$scientific_name)[1])
+goa = dplyr::filter(goa, scientific_name == unique(goa$scientific_name)[1])
+cow$Region = "COW"
+goa$Region = "GOA"
+
+df = rbind(cow[,c("Region","temp","depth")], goa[,c("Region","temp","depth")])
+
+ggplot(df, aes(temp)) + 
+  geom_histogram(bins=50) + 
+  facet_wrap(~Region) + 
+  theme_bw() +
+  xlab("Temperature (°C)") + 
+  ylab("Frequency")
+
+```
+There is a strong correlation between temperature and depth, and greater variability in temperature at low depths. 
+
+```{r tempplot, echo=FALSE}
+ggplot(df, aes(depth,temp)) + 
+  geom_point() + 
+  facet_wrap(~Region,ncol=1) + 
+  theme_bw() +
+  xlab("Depth (m)") + 
+  ylab("Temperature ()")
+```
+
+
+## Quadratic verus smooth spline
+
+As a sensitivitiy analysis to look at whether inference about the shape of the temperature relationship is dependent on choice of model, we compared models that treated the temperature effect as quadratic to those that modeled temperature as a low-order smooth (k=3). Temperature is standardized to be on the same scale for all species. Quadratic parameters are not derived for species where the quadratic coefficients is positivie (resulting in concave up parabolas). These results highlight that for nearly all species, the results between the two models as nearly identical.
+
+```{r echo = FALSE, fig.cap="Comparison between quadratic and spline models of temperature for groundfish (COW)"}
+region = "wc"
+pred_all = read.csv(here(paste0("output/",region,"_output_covar_effects.csv")))
+ 
+ggplot(pred_all, aes(enviro, est_non_rf, col=quadratic, group=quadratic)) + 
+   geom_line() + 
+   facet_wrap(~species, scale='free_y') +
+   theme_bw() + 
+   xlab("Standardized temperature (°C)") + 
+   ylab("Estimated effect") + 
+   theme(strip.background = element_rect(fill="white"),
+         strip.text.x = element_text(size = 5))
+
+```
+
+```{r echo = FALSE, fig.cap="Comparison between quadratic and spline models of temperature for groundfish (GOA)"}
+region = "goa"
+pred_all = read.csv(here(paste0("output/",region,"_output_covar_effects.csv")))
+ 
+ggplot(pred_all, aes(enviro, est_non_rf, col=quadratic, group=quadratic)) + 
+   geom_line() + 
+   facet_wrap(~species, scale='free_y') +
+   theme_bw() + 
+   xlab("Standardized temperature (°C)") + 
+   ylab("Estimated effect") + 
+   theme(strip.background = element_rect(fill="white"),
+         strip.text.x = element_text(size = 5))
+
+```
+
+\break  
+
+## Simulations
+
+To aid in the interpretation of the quadratic ranges, it is worth simulating relationships based on temperature, depth, or both predictors. We'll do this based on 6 years of the trawl survey data, and use the observed depth and temperature values as predictors, along with the spatial field.
+
+```{r load-data}
+dat = readRDS(here("survey_data/joined_nwfsc_data.rds"))
+dat = dplyr::filter(dat, species=="greenstriped rockfish",
+                  year %in% seq(2013,2018),
+                  !is.na(temp),!is.na(depth))
+
+# UTM transformation
+dat_ll = dat
+coordinates(dat_ll) <- c("longitude_dd", "latitude_dd")
+proj4string(dat_ll) <- CRS("+proj=longlat +datum=WGS84")
+# convert to utm with spTransform
+dat_utm = spTransform(dat_ll, 
+  CRS("+proj=utm +zone=10 +datum=WGS84 +units=km"))
+# convert back from sp object to data frame
+dat = as.data.frame(dat_utm)
+dat = dplyr::rename(dat, longitude = longitude_dd, 
+  latitude = latitude_dd)
+```
+
+
+### Example 1: density not determined by depth or temperature
+
+```{r example1}
+
+y = -3 + rnorm(nrow(dat),0,0.1)
+
+dat$cpue_kg_km2 = y
+
+# scale temperature before passing into sdmTMB
+scaled_d = dat
+scaled_d$temp = as.numeric(scale(dat$temp))
+scaled_d$depth = as.numeric(scale(log(dat$depth)))
+
+spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"), 
+                 cutoff=17)
+# note intercept is included at the end
+fit1 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
+       spde = spde,
+       data = scaled_d,
+       quadratic_roots = TRUE,
+       time="year",
+       spatial_only = FALSE)
+
+sd_report <- summary(fit1$sd_report)
+    
+params <- as.data.frame(sd_report[grep("quadratic", row.names(sd_report)), ])
+#knitr::kable(params, digits=2) 
+knitr::kable(tidy(fit1), digits=3)
+```
+
+This model has a hard time converging, but the parameter estimates for the quadratic
+effect of temperature indicate that estimates are close to 0. The quadratic min/max
+values (vertices) are also centered on 0, which is an indicator of no relationship.
+
+\break  
+
+### Example 2: density only determined by temperature
+
+Here we simulate CPUE using a quadratic form. After standardizing both temperature and
+depth, we include both as quadratic predictors in the model. We also include spatiotemporal and spatial variation. 
+
+```{r example2}
+
+y = -3 + 2*dat$temp - 0.12*dat$temp*dat$temp + rnorm(nrow(dat),0,0.1)
+
+dat$cpue_kg_km2 = y
+
+# scale temperature before passing into sdmTMB
+scaled_d = dat
+scaled_d$temp = as.numeric(scale(dat$temp))
+scaled_d$depth = as.numeric(scale(log(dat$depth)))
+
+spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"), 
+                 cutoff=17)
+# note intercept is included at the end
+fit2 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
+       spde = spde,
+       data = scaled_d,
+       quadratic_roots = TRUE,
+       time="year",
+       spatial_only = FALSE)
+
+sd_report <- summary(fit2$sd_report)
+    
+params <- as.data.frame(sd_report[grep("quadratic", row.names(sd_report)), ])
+#knitr::kable(params, digits=2)
+knitr::kable(tidy(fit2), digits=3)
+```
+
+In the simulated data, we assumed temperature had a positive effect up to a point,
+
+```{r echo=FALSE, fig.cap="Simulated relationship between CPUE and temperature (raw)"}
+ggplot(dat, aes(temp, cpue_kg_km2)) + geom_point() + 
+  theme_bw() + 
+  xlab("Temperature (Celsius)") + 
+  ylab("CPUE")
+```
+
+```{r echo=FALSE, fig.cap="Simulated relationship between CPUE and standardized temperature. The red vertical lines represent the estimated quadratic low and hi values, and the black line represents the estimated location of the peak."}
+ggplot(scaled_d, aes(temp, cpue_kg_km2)) + geom_point() + 
+  theme_bw() + 
+  xlab("Standardized temperature (Celsius)") + 
+  ylab("CPUE") + 
+  geom_vline(aes(xintercept=3.19),col="red") + 
+  geom_vline(aes(xintercept=-1.740509),col="red") + 
+  geom_vline(aes(xintercept=-1.740509 + 0.5*(3.19--1.740509)),col="black") 
+```
+\break  
+
+### Example 3: density determined by temperature and depth
+
+Here we add to the previous example by including quadratic effects of both depth and temperature. The temperature effect is coded the same as above, and the depth effect is modeled as an increasing function (abundance increases with depth)
+
+```{r example=3}
+y = -3 + 2*dat$temp - 0.12*dat$temp*dat$temp + rnorm(nrow(dat),0,0.1) + 
+  -0.0000002*dat$depth + 0.000002*dat$depth*dat$depth
+
+dat$cpue_kg_km2 = y
+
+# scale temperature before passing into sdmTMB
+scaled_d = dat
+scaled_d$temp = as.numeric(scale(dat$temp))
+scaled_d$depth = as.numeric(scale(log(dat$depth)))
+
+spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"), 
+                 cutoff=17)
+# note intercept is included at the end
+fit3 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
+       spde = spde,
+       data = scaled_d,
+       quadratic_roots = TRUE,
+       time="year",
+       spatial_only = FALSE)
+
+sd_report <- summary(fit3$sd_report)
+    
+params <- as.data.frame(sd_report[grep("quadratic", row.names(sd_report)), ])
+#knitr::kable(params, digits=2)
+knitr::kable(tidy(fit3), digits=3)
+```
+
+\break  
+
+### Example 4: confounded density determined by temperature and depth
+
+To try to make this as difficult as possible, we can simulate data with nearly identical quadratic relationships for temperature and depth,  
+
+```{r example=4}
+scaled_d = dat
+scaled_d$temp = as.numeric(scale(dat$temp))
+scaled_d$depth = as.numeric(scale(log(dat$depth)))
+
+y = 5 + 0.65*scaled_d$temp - 0.45*scaled_d$temp*scaled_d$temp + rnorm(nrow(dat),0,0.1) + 
+  0.5*scaled_d$depth -0.4*scaled_d$depth*scaled_d$depth
+
+dat$cpue_kg_km2 = y
+
+# scale temperature before passing into sdmTMB
+scaled_d = dat
+scaled_d$temp = as.numeric(scale(dat$temp))
+scaled_d$depth = as.numeric(scale(log(dat$depth)))
+
+spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"), 
+                 cutoff=17)
+# note intercept is included at the end
+fit4 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
+       spde = spde,
+       data = scaled_d,
+       quadratic_roots = TRUE,
+       time="year",
+       spatial_only = FALSE)
+
+sd_report <- summary(fit4$sd_report)
+    
+params <- as.data.frame(sd_report[grep("quadratic", row.names(sd_report)), ])
+#knitr::kable(params, digits=2)
+knitr::kable(tidy(fit4), digits=3)
+```
+
