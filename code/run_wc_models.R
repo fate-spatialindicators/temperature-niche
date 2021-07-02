@@ -40,9 +40,11 @@ for(i in 1:nrow(df)) {
   
   # rescale variables
   sub$depth = as.numeric(scale(log(sub$depth)))
+  # mean depth: 5.614747, sd = 0.896874
   sub$o2 = as.numeric(scale(log(sub$o2)))
+  # mean temp: 6.800925, sd temp = 1.983694
   sub$temp = as.numeric((scale(sub$temp)))
-
+  
   # drop points with missing depth or temp values
   sub = dplyr::filter(sub, !is.na(depth), !is.na(temp))
   
