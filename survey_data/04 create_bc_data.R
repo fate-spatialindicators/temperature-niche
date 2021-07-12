@@ -114,7 +114,8 @@ if (!file.exists(.file)) {
       survey = survey_abbrev, 
       species = species_common_name, 
       scientific_name = species_science_name,
-      # longitude, latitude, going to rely on fishing event id for merge with environmental data
+      # longitude_dd = longitude, #going to rely on fishing event id for merge with environmental data
+      # latitude_dd = latitude, 
       depth = depth_m, 
       cpue_kg_km2,
       fishing_event_id
@@ -233,7 +234,7 @@ saveRDS(env_data, "survey_data/bc-synoptic-env.rds")
 # read and join with
 env_data <- readRDS("survey_data/bc-synoptic-env.rds")
 trawl_data <- readRDS("survey_data/bc-synoptic-trawls.rds")
-dat <- left_join(trawl_data, env_data, by = "fishing_event_id") %>% rename(temp = temperature) %>% select(-depth_m, -salinity, -do)
+dat <- left_join(trawl_data, env_data, by = "fishing_event_id") %>% rename(temp = temperature, longitude_dd = longitude, latitude_dd = latitude) %>% select(-depth_m, -salinity, -do)
 
 # filter by species that occur in 10% of hauls
 threshold = 0.1
@@ -250,6 +251,9 @@ dat2 <- dplyr::filter(dat, species %in% keep$species)
 
 sort(unique(dat$species)) # list all species
 sort(unique(dat2$species)) # list species that occur in >10% of hauls
+
+# remove trawls that are missing tempurature data
+dat2 <- dat2[complete.cases(dat2), ]
 
 saveRDS(dat2, "survey_data/joined_bc_data.rds")
 
