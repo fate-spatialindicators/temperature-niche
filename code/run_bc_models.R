@@ -11,6 +11,7 @@ model_config <- ""
 # can be changed to put a new set of make a sub folder by the name used here e.g.
 # model_config <- "survey_effect/"
 # model_config <- "cutoff_12km/"
+# model_config <- "weighted_depth/“
 
 # UTM transformation
 dat_ll = dat
@@ -59,6 +60,9 @@ for(i in 1:nrow(df)) {
   # centre depth to full BC surveys' mean sampled depth 
   sub$depth_mean = mean(log(sub$depth))
 
+  # or centre depth based on each species weighted mean depth occupied as calculated in the summary csv
+  # sub$depth_mean = log(summary$weighted_depth[summary$species == as.character(df$species[i])])
+  
   sub$depth_sd = sd(log(sub$depth))
   
   sub$enviro_mean = mean(sub$enviro)
