@@ -79,8 +79,9 @@ d = dplyr::group_by(dat, species, year) %>%
 g = dplyr::left_join(g, d)
 write.csv(as.data.frame(g), file="output/summary_statistics_goa.csv")
 
-# BC data
-dat = readRDS("survey_data/joined_bc_data.rds")
+
+# BC data (keeping missing depth and temp, but filter out before summarizing)
+dat = readRDS("survey_data/joined_bc_data.rds") %>% dplyr::filter(!is.na(depth), !is.na(temp))
 
 g = dplyr::group_by(dat, species) %>% 
   summarize(mean_depth = mean(depth[which(cpue_kg_km2>0)],na.rm=T),
