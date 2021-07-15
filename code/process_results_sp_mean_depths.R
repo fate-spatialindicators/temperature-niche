@@ -2,8 +2,9 @@ library(ggplot2)
 library(dplyr)
 library(sdmTMB)
 
-region=c("goa","wc")[1]
-df = readRDS(paste0("output/",region,"/models.RDS"))
+region=c(#"goa","wc",
+  "bc")[1]
+df = readRDS(paste0("output/",region,"/models_w.RDS"))
 
 df$lo = NA
 df$lo_se = NA
@@ -17,21 +18,26 @@ df$reduction = NA
 df$reduction_se = NA
 df$converged = 0
 
+
+summary = read.csv(paste0("output/summary_statistics_", region,".csv"))
+
 # Create a data frame just to project the effect of temperature on
 m = readRDS(paste0("output/",region,"/model_",1,".rds"))
 newdf = m$data[1:61,]
 newdf$year = as.integer(2013)
-newdf$depth = newdf$depth*0.0
+# newdf$depth = newdf$depth*0.0
 newdf$enviro = seq(-3,3,by=0.1)
 
 for(i in 1:nrow(df)) {
   print(i)
+  
+
   fname = paste0("output/",region,"/model_",i,".rds")
   if(file.exists(fname)) {
     
     m = readRDS(fname)
     sd_report <- summary(m$sd_report)
-    
+    # browser()
     params <- as.data.frame(sd_report[grep("quadratic", row.names(sd_report)), ])
     df$lo[i] = params["quadratic_low","Estimate"]
     df$lo_se[i] = params["quadratic_low","Std. Error"]
@@ -52,6 +58,13 @@ for(i in 1:nrow(df)) {
     if(length(which(is.na(m$sd_report$sd))) == 0) df$converged[i] = 1  
   
     if(df$converged[i]==1) {
+      
+      # make predictions for mean occupied depth rather than average survey depth
+      
+      depth_sd = 0.662 # calculated globally elsewhere because not saved with some model runs
+      depth_global_mean = 5.048147
+      newdf$depth = (log(summary$weighted_depth[summary$species == as.character(df$species[i])])-depth_global_mean)/depth_sd
+        
       # now do predictions for this model and the gam at average depth
       # if(df$spline[i]==FALSE) {
       #   newdf$enviro = scale(newdf$enviro)*1.775293
@@ -59,6 +72,9 @@ for(i in 1:nrow(df)) {
       pred = predict(m, newdata = newdf)
       pred = dplyr::select(pred, -epsilon_st,
               -zeta_s, -omega_s, -est_rf, -est)
+      # why are we keeping the arbitrary placeholder variables in this df rather than 
+      # pred = dplyr::select(pred, model, species, quadratic, year, depth, enviro, est_non_rf)
+      
       pred$species = as.character(df$species[i])
       pred$quadratic = df$quadratic[i]
       pred$model = i
@@ -73,22 +89,29 @@ for(i in 1:nrow(df)) {
   }
 }
 
-write.csv(pred_all, file=paste0("output/",region,"_output_covar_effects.csv"))
+write.csv(pred_all, file=paste0("output/",region,"_output_covar_effects_at_w.csv"))
 # save results
-write.csv(df, file=paste0("output/",region,"_output.csv"))
+write.csv(df, file=paste0("output/",region,"_output_at_w.csv"))
 #saveRDS(df,file=paste0("output/",region,"_output.rds"))
-
-df = read.csv(file=paste0("output/",region,"_output.csv"), 
+# 
+df = read.csv(file=paste0("output/",region,"_output_w.csv"),
               stringsAsFactors = FALSE)
 
-pred_all = read.csv(paste0("output/",region,"_output_covar_effects.csv"))
-ggplot(pred_all, aes(enviro, est_non_rf, col=quadratic, group=quadratic)) + 
+pred_all = read.csv(paste0("output/",region,"_output_covar_effects_w.csv"))
+
+ggplot(pred_all, aes(
+  enviro,#*enviro_sd)+enviro_mean,
+  est_non_rf, col=quadratic, group=quadratic)) + 
   geom_line() + 
-  facet_wrap(~species, scale='free_y') +
+  facet_wrap(~species, ncol =5, scale='free_y') +
   theme_bw() + 
-  xlab("Standardized temperature") + 
+  xlab("Standardized temperature") +
+  # xlab("Temperature") + 
   ylab("Estimated effect") + 
   theme(strip.background = element_rect(fill="white"))
+
+ggsave("all-bc-fish-temp-effects_w.png", width = 11, height = 10)
+
 
 pdf(paste0("plots/",region,"-temp_range.pdf"))
 level_order = dplyr::filter(df, !is.na(range), covariate=="temp",
@@ -132,7 +155,7 @@ pdf(paste0("plots/",region,"-temp_hi.pdf"))
 level_order = dplyr::filter(df, !is.na(hi), covariate=="temp",
   depth_effect == TRUE, hi_se < 5) %>%
   dplyr::arrange(hi) %>% select(species)
-dplyr::filter(df, !is.na(hi), covariate=="temp", depth_effect==TRUE,hi_se < 5) %>% 
+dplyr::filter(df, !is.na(hi), covariate=="temp", depth_effect==TRUE, hi_se < 5) %>% 
   ggplot(aes(factor(species, level=level_order$species), hi)) +
   geom_pointrange(aes(ymin=hi-2*hi_se, 
     ymax=hi+2*hi_se),col="darkblue") +
@@ -144,7 +167,7 @@ pdf(paste0("plots/",region,"-temp_reduction.pdf"))
 level_order = dplyr::filter(df, !is.na(reduction), covariate=="temp",
   depth_effect == TRUE, reduction_se < 5) %>%
   dplyr::arrange(reduction) %>% select(species)
-dplyr::filter(df, !is.na(reduction), covariate=="temp", depth_effect==TRUE,reduction_se < 5) %>% 
+dplyr::filter(df, !is.na(reduction), covariate=="temp", depth_effect==TRUE, reduction_se < 5) %>% 
   ggplot(aes(factor(species, level=level_order$species), reduction)) +
   geom_pointrange(aes(ymin=reduction-2*reduction_se, 
     ymax=reduction+2*reduction_se),col="darkblue") +
