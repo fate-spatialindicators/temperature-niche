@@ -3,7 +3,14 @@ library(sdmTMB)
 library(dplyr)
 library(sp)
 
-dat = readRDS("survey_data/joined_bc_data.rds")
+dat = readRDS("survey_data/joined_bc_data.rds") 
+
+# base model configuration
+model_config <- ""
+
+# can be changed to put a new set of make a sub folder by the name used here e.g.
+# model_config <- "survey_effect/"
+# model_config <- "cutoff_12km/"
 
 # UTM transformation
 dat_ll = dat
@@ -14,12 +21,14 @@ dat_utm = spTransform(dat_ll,
   CRS("+proj=utm +zone=9 +datum=WGS84 +units=km"))
 # convert back from sp object to data frame
 dat = as.data.frame(dat_utm)
-dat = dplyr::rename(dat, longitude = longitude_dd,
-latitude = latitude_dd)
+dat = dplyr::rename(dat, 
+  longitude = longitude_dd, latitude = latitude_dd)
 
 # filter out species with < 50 samples in a year
 summary = read.csv("output/summary_statistics_bc.csv")
-summary = dplyr::filter(summary, min_n >= 50) # 50 used for other areas, might try 30 for BC
+summary = dplyr::filter(summary, mean_n >= 50) 
+# 50 min_n used for other areas, but given alternating yr samples, I think mean works better for BC
+# I also haven't trimmed out 2003, 2004 sampling that was just in QCS, should we?
 dat = dplyr::filter(dat, species %in% summary$species)
 
 # create grid of spp. Run each 2x, with and without
@@ -38,25 +47,35 @@ for(i in 1:nrow(df)) {
   
   sub = dplyr::filter(dat, species == df$species[i])
   
-  # rescale variables
-  sub$depth = as.numeric(scale(log(sub$depth)))
-  # mean depth: 5.614747, sd = 0.896874
-  # mean temp: 6.800925, sd temp = 1.983694
-  sub$temp = as.numeric((scale(sub$temp)))
-  
-  # not including o2 right now because many fewer years data
-  # will need to make new bc dataframe
-  # sub$o2 = as.numeric(scale(log(sub$o2)))
-  
-  # drop points with missing depth or temp values
-  sub = dplyr::filter(sub, !is.na(depth), !is.na(temp))
+  sub$suvey = factor(sub$survey, levels = c("SYN QCS", "SYN HS", "SYN WCVI", "SYN WCHG"))
   
   # rename variables to make code generic
   sub = dplyr::rename(sub, enviro = as.character(df$covariate[i]))
   
+  # drop points with missing depth or enviro values
+  sub = dplyr::filter(sub, !is.na(depth), !is.na(enviro))
+  
+  # save means and sd used in scaling of covariates for ease of back transformation for figures?
+  # centre depth to full BC surveys' mean sampled depth 
+  sub$depth_mean = mean(log(sub$depth))
+
+  sub$depth_sd = sd(log(sub$depth))
+  
+  sub$enviro_mean = mean(sub$enviro)
+  sub$enviro_sd = sd(sub$enviro)
+  
+  # rescale variables
+  # sub$depth = as.numeric((log(sub$depth)) # scaled globally
+  sub$depth = as.numeric((log(sub$depth)-sub$depth_mean)/sub$depth_sd) 
+  # sub$enviro = as.numeric((scale(sub$enviro)))
+  sub$enviro = as.numeric((sub$enviro-sub$enviro_mean)/sub$enviro_sd) 
+  
+  # browser()
   # make spde
   spde <- try(make_mesh(sub, c("longitude","latitude"),
-    cutoff=17.5), silent=TRUE)
+    cutoff=17.5), silent=TRUE) # may want to make smaller, but keeping same as WC for now
+  
+  # browser()
   if(class(spde) != "try-error") {
     formula = paste0("cpue_kg_km2 ~ -1")
     
@@ -74,7 +93,7 @@ for(i in 1:nrow(df)) {
       time = "year"        
     }
       
-    formula = paste0(formula, " + as.factor(year)")
+    formula = paste0(formula, " + as.factor(year)") # + survey # I experimented with adding survey and it 
     
     if(df$depth_effect[i]==TRUE) {
       formula = paste0(formula, " + depth + I(depth^2)")
@@ -93,7 +112,7 @@ for(i in 1:nrow(df)) {
     ), silent=TRUE)
     
     if(class(m)!="try-error") {
-        saveRDS(m, file=paste0("output/bc/model_",i,".rds"))
+        saveRDS(m, file=paste0("output/bc/", model_config, "model_",i,".rds"))
     }
   } # end try on spde
   
