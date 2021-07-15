@@ -25,7 +25,7 @@ summary = read.csv(paste0("output/summary_statistics_", region,".csv"))
 m = readRDS(paste0("output/",region,"/model_",1,".rds"))
 newdf = m$data[1:61,]
 newdf$year = as.integer(2013)
-# newdf$depth = newdf$depth*0.0
+newdf$depth = newdf$depth*0.0
 newdf$enviro = seq(-3,3,by=0.1)
 
 for(i in 1:nrow(df)) {
@@ -59,8 +59,8 @@ for(i in 1:nrow(df)) {
   
     if(df$converged[i]==1) {
       
-      # make predictions for mean occupied depth rather than average survey depth
-      
+      # make predictions for mean occupied depth rather than average survey depth if survey average depth was used in the model
+      # if not, or if plots at overall mean desired, comment out next 3 lines
       depth_sd = 0.662 # calculated globally elsewhere because not saved with some model runs
       depth_global_mean = 5.048147
       newdf$depth = (log(summary$weighted_depth[summary$species == as.character(df$species[i])])-depth_global_mean)/depth_sd
