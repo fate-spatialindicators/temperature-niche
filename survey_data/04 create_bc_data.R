@@ -115,8 +115,8 @@ if (!file.exists(.file)) {
       survey = survey_abbrev,
       species = species_common_name,
       scientific_name = species_science_name,
-      # longitude_dd = longitude, #going to rely on fishing event id for merge with environmental data
-      # latitude_dd = latitude,
+      longitude_dd = longitude, #going to rely on fishing event id for merge with environmental data
+      latitude_dd = latitude,
       depth = depth_m,
       cpue_kg_km2,
       fishing_event_id
@@ -233,11 +233,11 @@ saveRDS(env_data, "survey_data/bc-synoptic-env.rds")
 
 
 # read and join with
-env_data <- readRDS("survey_data/bc-synoptic-env.rds")
+env_data <- readRDS("survey_data/bc-synoptic-env.rds") %>% rename(longitude_dd = longitude, latitude_dd = latitude)
 trawl_data <- readRDS("survey_data/bc-synoptic-trawls.rds")
-dat <- left_join(trawl_data, env_data, by = "fishing_event_id") %>% rename(temp = temperature, 
-  # o2 = do, # much fewer years of complete data if o2 added in
-  longitude_dd = longitude, latitude_dd = latitude) %>% select(-depth_m, -salinity)
+dat <- left_join(trawl_data, env_data) %>% rename(
+  o2 = do, # much fewer years of complete data if o2 added in; if filtering for enviro only happens at last step is ok to keep
+  temp = temperature) %>% select(-depth_m, -salinity) %>% dplyr::filter(!is.na(longitude_dd), !is.na(latitude_dd))
 
 # filter by species that occur in 10% of hauls
 threshold = 0.1
@@ -255,7 +255,10 @@ dat2 <- dplyr::filter(dat, species %in% keep$species)
 sort(unique(dat$species)) # list all species
 sort(unique(dat2$species)) # list species that occur in >10% of hauls
 
-# remove trawls that are missing tempurature data
-dat2 <- dat2[complete.cases(dat2), ]
+# remove trawls that are missing tempurature data, but this can be done later too?
+# dat2 <- dat2[complete.cases(dat2), ] 
 
+# sounds like from text that we want to trim years before 2005 where spatial coverage was restricted to QCS?
+# dat2 <- dplyr::filter(dat2, year >= 2005)
+  
 saveRDS(dat2, "survey_data/joined_bc_data.rds")
