@@ -2,7 +2,7 @@ library(ggplot2)
 library(dplyr)
 library(sdmTMB)
 
-region=c("goa","wc")[1]
+region=c("goa","wc","bc")[1]
 df = readRDS(paste0("output/",region,"/models.RDS"))
 
 df$lo = NA

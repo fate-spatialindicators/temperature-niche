@@ -44,7 +44,7 @@ Around the world, trawl surveys of marine fishes are routinely conducted to supp
 
 [Add sentence or two about temperature sampling]
 
-As each of these surveys collects data on a large number of species, we restricted our analysis to the more data - rich, restricting analyses to species with at least 50 observations in all survey years (n = COW, n = GOA, n = XX in BC).
+As each of these surveys collects data on a large number of species, we restricted our analysis to the more data - rich, restricting analyses to species with at least 50 observations in all survey years (n = COW, n = 24 in GOA, n = XX in BC).
 
 ### Models 
 
@@ -127,49 +127,7 @@ ggplot(d, aes(x,y)) +
 
 \break  
 
-```{r fig2, echo=FALSE, fig.cap= "Figure 2", fig.height=5, fig.width=6}
-region="wc"
-df = read.csv(file=here(paste0("output/",region,"_output.csv")), 
-              stringsAsFactors = FALSE)
-
-# sort by the midpoint, which is same as sorting by % above / below
-df$mid = 0.5*(df$hi + df$lo)
-df$mid_se = sqrt((0.5^2)*(df$hi_se^2) + (0.5^2)*(df$lo_se^2))
-# drop the NAs and calculate the SE / mean for the quadratic effect - want to weed
-# out the models with uncertain coefs
-df = dplyr::filter(df, !is.na(lo), !is.na(hi), covariate=="temp",
-                            depth_effect == TRUE) %>% 
-  dplyr::mutate(quad_cv = b_env2_se/b_env2) %>% 
-  dplyr::filter(abs(quad_cv) <= 0.25)
-
-# arrange spp by mid values
-level_order = df %>%
-  dplyr::arrange(mid) %>% select(species)
-
-# 
-g1 = dplyr::filter(df, species%in%level_order$species) %>% 
-  ggplot(aes(factor(species, level=level_order$species), mid)) +
-  geom_pointrange(aes(ymin=mid-mid_se, ymax=mid+mid_se),col="black",alpha=0.4) + 
-  geom_pointrange(aes(factor(species, level=level_order$species), hi, ymin=hi-hi_se, ymax=hi+hi_se),col="red",alpha=0.4) +
-  geom_pointrange(aes(factor(species, level=level_order$species), lo, ymin=lo-lo_se, ymax=lo+lo_se),col="blue",alpha=0.4) + 
-  coord_flip() + xlab("Species") + ylab("") + 
-  geom_vline(aes(xintercept=0), col="black") + 
-  theme_bw() + ggtitle("COW")
-g1
-# dplyr::filter(df, !is.na(mid), covariate=="temp", depth_effect==TRUE) %>% 
-#   ggplot(aes(factor(species, level=level_order$species), lo)) +
-#   geom_pointrange(aes(ymin=lo-lo_se, ymax=lo+lo_se),col="blue",alpha=0.4) + 
-#   geom_pointrange(aes(factor(species, level=level_order$species), hi, ymin=hi-hi_se, ymax=hi+hi_se),col="red",alpha=0.4) +
-#   #geom_pointrange(aes(ymin=lo-2*lo_se, 
-#   #                    ymax=lo+2*lo_se),col="darkblue") +
-#   coord_flip() + xlab("Species") + ylab("") + 
-#   ggtitle(paste0("Temperature low bound - ",region," survey")) + 
-#   scale_color_gradient2() + 
-#   geom_vline(aes(xintercept=0), col="black") + 
-#   theme_bw()
-```
-
-```{r echo=FALSE, fig.height=4, fig.width=6}
+```{r fig2, echo=FALSE, fig.cap= "Figure 2"}
 region="goa"
 df = read.csv(file=here(paste0("output/",region,"_output.csv")), 
               stringsAsFactors = FALSE)
@@ -179,24 +137,58 @@ df$mid = 0.5*(df$hi + df$lo)
 df$mid_se = sqrt((0.5^2)*(df$hi_se^2) + (0.5^2)*(df$lo_se^2))
 # drop the NAs and calculate the SE / mean for the quadratic effect - want to weed
 # out the models with uncertain coefs
-df = dplyr::filter(df, !is.na(lo), !is.na(hi), covariate=="temp",
-                            depth_effect == TRUE) %>% 
+df_goa = dplyr::filter(df, !is.na(lo), !is.na(hi), covariate=="temp", depth_effect == TRUE) %>% 
+  dplyr::mutate(quad_cv = b_env2_se/b_env2) %>% 
+  dplyr::filter(abs(quad_cv) <= 1)
+df_goa$species = tolower(df_goa$species)
+
+region="bc"
+df = read.csv(file=here(paste0("output/",region,"_output.csv")), 
+              stringsAsFactors = FALSE)
+
+# sort by the midpoint, which is same as sorting by % above / below
+df$mid = 0.5*(df$hi + df$lo)
+df$mid_se = sqrt((0.5^2)*(df$hi_se^2) + (0.5^2)*(df$lo_se^2))
+# drop the NAs and calculate the SE / mean for the quadratic effect - want to weed
+# out the models with uncertain coefs
+df_bc = dplyr::filter(df, !is.na(lo), !is.na(hi), covariate=="temp", depth_effect == TRUE) %>% 
+  dplyr::mutate(quad_cv = b_env2_se/b_env2) %>% 
+  dplyr::filter(abs(quad_cv) <= 1)
+df_bc$species = tolower(df_bc$species)
+
+region="wc"
+df = read.csv(file=here(paste0("output/",region,"_output.csv")), 
+              stringsAsFactors = FALSE)
+
+# sort by the midpoint, which is same as sorting by % above / below
+df$mid = 0.5*(df$hi + df$lo)
+df$mid_se = sqrt((0.5^2)*(df$hi_se^2) + (0.5^2)*(df$lo_se^2))
+# drop the NAs and calculate the SE / mean for the quadratic effect - want to weed
+# out the models with uncertain coefs
+df_wc = dplyr::filter(df, !is.na(lo), !is.na(hi), covariate=="temp", depth_effect == TRUE) %>% 
   dplyr::mutate(quad_cv = b_env2_se/b_env2) %>% 
   dplyr::filter(abs(quad_cv) <= 1)
 
-# arrange spp by mid values
-level_order = df %>%
-  dplyr::arrange(mid) %>% select(species)
+df_wc$region = "COW"
+df_bc$region = "BC"
+df_goa$region = "GOA"
 
-g2 = dplyr::filter(df, species%in%level_order$species) %>% 
-  ggplot(aes(factor(species, level=level_order$species), mid)) +
-  geom_pointrange(aes(ymin=mid-mid_se, ymax=mid+mid_se),col="black",alpha=0.4) + 
-  geom_pointrange(aes(factor(species, level=level_order$species), hi, ymin=hi-hi_se, ymax=hi+hi_se),col="red",alpha=0.4) +
-  geom_pointrange(aes(factor(species, level=level_order$species), lo, ymin=lo-lo_se, ymax=lo+lo_se),col="blue",alpha=0.4) + 
+# create grid of species x regions
+all_spp = unique(c(df_wc$species,df_goa$species,df_bc$species))
+grid = expand.grid(species = all_spp, region = c("COW","BC","GOA")) # 43 sp x 3 regions
+df_all = left_join(grid, rbind(df_wc,df_bc,df_goa))
+
+g1 = df_all %>% 
+  ggplot(aes(species, mid)) +
+  geom_pointrange(aes(ymin=mid-mid_se,ymax=mid+mid_se),col="black",alpha=0.4) + 
+  geom_pointrange(aes(species, hi,ymin=hi-hi_se, ymax=hi+hi_se),col="red",alpha=0.4) +
+  geom_pointrange(aes(species,lo, ymin=lo-lo_se, ymax=lo+lo_se),col="blue",alpha=0.4) + 
+  facet_wrap(~region,scale="free_x") + 
   coord_flip() + xlab("Species") + ylab("") + 
   geom_vline(aes(xintercept=0), col="black") + 
-  theme_bw() + ggtitle("GOA")
-g2
+  theme_bw()
+g1
+
 ```
 
 \break  
@@ -208,10 +200,13 @@ wc = read.csv(file=here("output/wc_output.csv"),
               stringsAsFactors = FALSE)
 goa = read.csv(file=here("output/goa_output.csv"), 
               stringsAsFactors = FALSE)
+bc = read.csv(file=here("output/goa_output.csv"), 
+              stringsAsFactors = FALSE)
 wc$Region = "COW"
 goa$Region="GOA"
-df = rbind(wc,goa) %>% 
-  dplyr::filter(quadratic==TRUE) 
+bc$Region="BC"
+df = rbind(wc,goa,bc) %>% 
+  dplyr::filter(quadratic==TRUE,converged==1) 
 
 # drop out uncertain quadratic models
 df = dplyr::mutate(df, quad_cv = abs(b_env2_se/b_env2)) %>%
@@ -222,11 +217,15 @@ df$mid_se = sqrt((0.5^2)*(df$hi_se^2) + (0.5^2)*(df$lo_se^2))
 
 g1 = ggplot(df, aes(Region, range, fill=Region,col=Region)) + 
   geom_boxplot(alpha=0.5) + 
+  scale_fill_viridis(end=0.8,discrete = TRUE) + 
+  scale_color_viridis(end=0.8,discrete = TRUE) + 
   geom_point(alpha=0.5, position = position_dodge2(0.02)) + 
   theme_bw() + xlab("") + 
   ylab("Range of thermal niche")
 g2 = ggplot(df, aes(Region, mid, fill=Region,col=Region)) + 
   geom_boxplot(alpha=0.5) + 
+  scale_fill_viridis(end=0.8,discrete = TRUE) + 
+  scale_color_viridis(end=0.8,discrete = TRUE) + 
   geom_point(alpha=0.5, position = position_dodge2(0.02)) + 
   theme_bw() + xlab("") + 
   ylab("Midpoint of thermal niche")

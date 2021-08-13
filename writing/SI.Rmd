@@ -83,6 +83,20 @@ ggplot(pred_all, aes(enviro, est_non_rf, col=quadratic, group=quadratic)) +
 
 ```
 
+```{r echo = FALSE, fig.cap="Comparison between quadratic and spline models of temperature for groundfish (BC)"}
+region = "bc"
+pred_all = read.csv(here(paste0("output/",region,"_output_covar_effects.csv")))
+ 
+ggplot(pred_all, aes(enviro, est_non_rf, col=quadratic, group=quadratic)) + 
+   geom_line() + 
+   facet_wrap(~species, scale='free_y') +
+   theme_bw() + 
+   xlab("Standardized temperature (°C)") + 
+   ylab("Estimated effect") + 
+   theme(strip.background = element_rect(fill="white"),
+         strip.text.x = element_text(size = 5))
+
+```
 \break  
 
 ## Simulations
@@ -123,13 +137,21 @@ scaled_d$temp = as.numeric(scale(dat$temp))
 scaled_d$depth = as.numeric(scale(log(dat$depth)))
 
 spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"), 
-                 cutoff=17)
+                 cutoff=25)
+    # use PC prior for matern model
+    priors = sdmTMBpriors(
+      matern_s = pc_matern(
+        range_gt = 5, range_prob = 0.05,
+        sigma_lt = 25, sigma_prob = 0.05
+      )
+    )  
 # note intercept is included at the end
 fit1 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
        spde = spde,
        data = scaled_d,
-       quadratic_roots = TRUE,
        time="year",
+       priors=priors,
+      control = sdmTMBcontrol(quadratic_roots = TRUE),
        spatial_only = FALSE)
 
 sd_report <- summary(fit1$sd_report)
@@ -162,14 +184,15 @@ scaled_d$temp = as.numeric(scale(dat$temp))
 scaled_d$depth = as.numeric(scale(log(dat$depth)))
 
 spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"), 
-                 cutoff=17)
+                 cutoff=25)
 # note intercept is included at the end
 fit2 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
        spde = spde,
        data = scaled_d,
-       quadratic_roots = TRUE,
-       time="year",
-       spatial_only = FALSE)
+       priors=priors,
+      control = sdmTMBcontrol(quadratic_roots = TRUE),
+       spatial_only = FALSE,
+       time="year")
 
 sd_report <- summary(fit2$sd_report)
     
@@ -214,13 +237,14 @@ scaled_d$temp = as.numeric(scale(dat$temp))
 scaled_d$depth = as.numeric(scale(log(dat$depth)))
 
 spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"), 
-                 cutoff=17)
+                 cutoff=25)
 # note intercept is included at the end
 fit3 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
        spde = spde,
        data = scaled_d,
-       quadratic_roots = TRUE,
        time="year",
+       priors=priors,
+      control = sdmTMBcontrol(quadratic_roots = TRUE),
        spatial_only = FALSE)
 
 sd_report <- summary(fit3$sd_report)
@@ -252,14 +276,15 @@ scaled_d$temp = as.numeric(scale(dat$temp))
 scaled_d$depth = as.numeric(scale(log(dat$depth)))
 
 spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"), 
-                 cutoff=17)
+                 cutoff=25)
 # note intercept is included at the end
 fit4 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
        spde = spde,
        data = scaled_d,
-       quadratic_roots = TRUE,
-       time="year",
-       spatial_only = FALSE)
+       priors=priors,
+      control = sdmTMBcontrol(quadratic_roots = TRUE),
+       spatial_only = FALSE,
+       time="year")
 
 sd_report <- summary(fit4$sd_report)
     
