@@ -1,4 +1,4 @@
-devtools::install_github("pbs-assess/sdmTMB")
+devtools::install_github("pbs-assess/sdmTMB", "priors-experimental")
 library(sdmTMB)
 library(dplyr)
 library(sp)
@@ -53,7 +53,7 @@ for(i in 1:nrow(df)) {
   
   # make spde
   spde <- try(make_mesh(sub, c("longitude","latitude"),
-    cutoff=17.5), silent=TRUE)
+    cutoff=25), silent=TRUE)
   if(class(spde) != "try-error") {
     formula = paste0("cpue_kg_km2 ~ -1")
     
@@ -77,6 +77,13 @@ for(i in 1:nrow(df)) {
       formula = paste0(formula, " + depth + I(depth^2)")
     }
     
+    # use PC prior for matern model
+    priors = sdmTMBpriors(
+      matern_s = pc_matern(
+        range_gt = 5, range_prob = 0.05,
+        sigma_lt = 25, sigma_prob = 0.05
+      )
+    )
     # fit model
     m <- try(sdmTMB(
       formula = as.formula(formula),
@@ -85,8 +92,9 @@ for(i in 1:nrow(df)) {
       time = time,
       family = tweedie(link = "log"),
       data = sub,
+      priors=priors,
       spatial_only = df$spatial_only[i],
-      quadratic_roots = df$quadratic[i]
+      control = sdmTMBcontrol(quadratic_roots = df$quadratic[i])
     ), silent=TRUE)
     
     if(class(m)!="try-error") {
