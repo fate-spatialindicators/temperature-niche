@@ -1,0 +1,324 @@
+---
+title: "Environmental affinities"
+author: "Jameal Samhouri"
+date: "8/6/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+This script is for use with the FATE spatial indicators project led by Lewis Barnett and Eric Ward, August 2019. It generates plots of thermal and dissolved oygen affinities for groundfish based on sdmTMB model output.
+
+Eric modified this script so that now we save a dataframe to make frowny face figures and a separate dataframe to make standardized affinities.
+
+We will consider affinity using at least 2 measures of environmental affinities:
+1) relative reduction in density, calculated as % difference in fish density expected with a 1SD change from its peak density
+2) climatic breadth, calculated as width of parabola (between 2.5-97.5%) formed by plotting density against env variable. Calculate as value of env variable at 0.025*max density and at 0.975*max density
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_knit$set(root.dir = #"/Users/jameal.samhouri/Dropbox/Projects/In progress/Barnett et al. #FATE/") # the root directory for all work in this .Rmd
+```
+
+### Prep for running code
+Clear workspace
+```{r, echo=FALSE}
+rm(list=ls())
+```
+<br>
+
+Install packages
+```{r, echo=FALSE}
+# devtools::install_github("pbs-assess/gfplot") #https://github.com/pbs-assess/gfplot
+#library(gfplot)
+library(foreign)
+library(lubridate)
+library(tidyverse)
+library(reshape2)
+library(scales)
+library(zoo)
+library(ggrepel)
+```
+<br>
+
+### Read in the data.
+
+```{r}
+
+# These are the B0, B1, and B2 effects for each species. The covariates have been centered prior to estimation to have mean 0, so you should be able to generate x = seq(-3,3,length.out=100) or whatever and then y= exp [ b0 + b1*x + b2*(x^2) ]
+
+# this data set is for static covariates, including depth
+#stat_cov_df <- read.csv("Output_Data/static_covariates_output.csv")
+
+# this data set is for static covariates, with 1 model that does include depth and 1 that does not
+stat_cov_df <- read.csv("Output_Data/spp_ranked.csv")
+
+# Match common names and try to filter some species. For now, we'll
+# try to match with DFO's well sampled species
+spec = readRDS("Input_Data/lookup.rds")
+spec = spec[,c("species_common_name","species_science_name","type")]
+spec = dplyr::rename(spec, sciname = species_science_name)
+stat_cov_df$sciname = tolower(stat_cov_df$sciname)
+stat_cov_df = dplyr::left_join(stat_cov_df, spec)
+stat_cov_df = dplyr::filter(stat_cov_df, type=="A")
+
+dim(stat_cov_df)
+head(stat_cov_df)
+```
+
+### Prepare data for plotting. 
+
+```{r}
+
+# These are the B0, B1, and B2 effects for each species. The covariates have been centered prior to estimation to have mean 0, so you should be able to generate x = seq(-3,3,length.out=100) or whatever and then y= exp [ b0 + b1*x + b2*(x^2) ]
+
+# set number of std deviations over which to calculate affinity to a specific variable
+num_stdev <- 1
+
+# add a column for standardized temp or O2 values
+length_x <- 100
+
+# Using these transformations to rescale x-axis to real units. based on observed values for 2010-15
+scale_depth = qnorm(seq(0.01,0.99,length.out=length_x),mean=399.9014,sd=332.9137)
+scale_o2 = qnorm(seq(0.01,0.99,length.out=length_x),mean=1.253339,sd=0.9233315)
+scale_temp = qnorm(seq(0.01,0.99,length.out=length_x),mean=6.800925,sd=1.983694)
+
+x <- seq(-3,3,length.out=100)
+
+affinity_df <- affinity_df_nodepth <- c()
+
+# static covariate model, including depth
+for(i in 1:nrow(stat_cov_df)){
+y_o2 <- exp ( 
+  stat_cov_df[i,'B0_o2'] + 
+    stat_cov_df[i,'B1_o2']*x + 
+    stat_cov_df[i,'B2_o2']*(x^2) ) # value of expected density at each value of O2
+y_temp <- exp(
+  stat_cov_df[i,'B0_temp'] +
+    stat_cov_df[i,'B1_temp']*x + 
+    stat_cov_df[i,'B2_temp']*(x^2)
+  ) # value of expected density at each value of temp
+
+tmp_affinity_df <- data.frame(data.frame(lapply(stat_cov_df[i,],rep,length_x),x,y_o2,y_temp,scale_o2,scale_temp))
+affinity_df <- rbind(affinity_df,tmp_affinity_df)
+
+}
+
+dim(affinity_df)
+head(affinity_df)
+
+stat_cov_df_nodepth = stat_cov_df
+# static covariate model, excluding depth
+for(i in 1:nrow(stat_cov_df)){
+y_o2_nodepth <- exp ( 
+  stat_cov_df[i,'B0_o2_nodepth'] + 
+    stat_cov_df[i,'B1_o2_nodepth']*x + 
+    stat_cov_df[i,'B2_o2_nodepth']*(x^2) ) # value of expected density at each value of O2
+y_temp_nodepth <- exp(
+  stat_cov_df[i,'B0_temp_nodepth'] +
+    stat_cov_df[i,'B1_temp_nodepth']*x + 
+    stat_cov_df[i,'B2_temp_nodepth']*(x^2)
+) # value of expected density at each value of temp
+
+tmp_affinity_df_nodepth <- data.frame(data.frame(lapply(stat_cov_df[i,],rep,length_x),x,y_o2_nodepth,y_temp_nodepth,scale_o2,scale_temp))
+affinity_df_nodepth <- rbind(affinity_df_nodepth,tmp_affinity_df_nodepth)
+
+}
+
+dim(affinity_df_nodepth)
+head(affinity_df_nodepth)
+
+```
+
+```{r}
+
+# These are the B0, B1, and B2 effects for each species. The covariates have been centered prior to estimation to have mean 0, so you should be able to generate x = seq(-3,3,length.out=100) or whatever and then y= exp [ b0 + b1*x + b2*(x^2) ]
+
+# static covariate model, including depth
+for(i in 1:nrow(stat_cov_df)){
+
+stat_cov_df$y_o2_delta_density[i] <- exp(
+  stat_cov_df[i,'B0_o2'] + 
+    stat_cov_df[i,'B1_o2']*num_stdev + 
+    stat_cov_df[i,'B2_o2']*(num_stdev^2) ) / exp(stat_cov_df[i,'B0_o2'])
+
+# also calculate integral under curve
+# ax + (b/2)*(x^2) + (c/3)*(x^3)
+# a*3 + (b/2)*(3^2) + (c/3)*(3^3) - [a*-3 + (b/2)*(-3^2) + (c/3)*(-3^3)]
+# 6a + (c/3)*(9) - (c/3)*(27)
+stat_cov_df$integral_o2[i] = stat_cov_df[i,'B0_o2']*6 + (stat_cov_df[i,'B2_o2']/3)*(9-27)
+
+stat_cov_df$y_temp_delta_density[i] <- exp(
+  stat_cov_df[i,'B0_temp'] + 
+    stat_cov_df[i,'B1_temp']*num_stdev + 
+    stat_cov_df[i,'B2_temp']*(num_stdev^2) ) / exp(stat_cov_df[i,'B0_temp'])
+
+stat_cov_df$integral_temp[i] = stat_cov_df[i,'B0_temp']*6 + (stat_cov_df[i,'B2_temp']/3)*(9-27)
+
+}
+
+stat_cov_df_nodepth = stat_cov_df
+# static covariate model, excluding depth
+for(i in 1:nrow(stat_cov_df)){
+
+stat_cov_df_nodepth$y_o2_delta_density_nodepth[i] <- exp(
+  stat_cov_df[i,'B0_o2_nodepth'] + 
+    stat_cov_df[i,'B1_o2_nodepth']*num_stdev + 
+    stat_cov_df[i,'B2_o2_nodepth']*(num_stdev^2) ) / 
+  exp(stat_cov_df[i,'B0_o2_nodepth'])
+
+# also calculate integral under curve
+# ax + (b/2)*(x^2) + (c/3)*(x^3)
+# a*3 + (b/2)*(3^2) + (c/3)*(3^3) - [a*-3 + (b/2)*(-3^2) + (c/3)*(-3^3)]
+# 6a + (c/3)*(9) - (c/3)*(27)
+stat_cov_df_nodepth$integral_o2[i] = stat_cov_df[i,'B0_o2_nodepth']*6 + (stat_cov_df[i,'B2_o2_nodepth']/3)*(9-27)
+
+stat_cov_df_nodepth$y_temp_delta_density_nodepth[i] <- exp(
+  stat_cov_df[i,'B0_temp_nodepth'] + 
+    stat_cov_df[i,'B1_temp_nodepth']*num_stdev + 
+    stat_cov_df[i,'B2_temp_nodepth']*(num_stdev^2) ) / 
+  exp(stat_cov_df[i,'B0_temp_nodepth'])
+
+stat_cov_df_nodepth$integral_o2[i] = stat_cov_df[i,'B0_temp_nodepth']*6 + (stat_cov_df[i,'B2_temp_nodepth']/3)*(9-27)
+
+}
+
+stat_cov_df$integral_temp = stat_cov_df$integral_temp + abs(min(stat_cov_df$integral_temp)) + 10
+stat_cov_df$integral_o2 = stat_cov_df$integral_o2 + abs(min(stat_cov_df$integral_o2)) + 10
+stat_cov_df_nodepth$integral_temp = stat_cov_df_nodepth$integral_temp + abs(min(stat_cov_df_nodepth$integral_temp)) + 10
+stat_cov_df_nodepth$integral_o2 = stat_cov_df_nodepth$integral_o2 + abs(min(stat_cov_df_nodepth$integral_o2,na.rm=T)) + 10
+
+```
+<br>
+
+
+### Make some plots.
+
+
+```{r}
+ggsave("Figures/01 O2 effects in static covariate model including depth.pdf",width=20, height=10)
+ggplot(affinity_df, aes(scale_o2, y_o2)) + geom_line() + 
+  facet_wrap(~species_common_name, scale="free")
+```
+
+```{r}
+ggsave("Figures/02 O2 effects in static covariate model no  depth.pdf",width=20, height=10)
+ggplot(affinity_df_nodepth, aes(scale_o2, y_o2_nodepth)) + geom_line() + 
+  facet_wrap(~species_common_name, scale="free")
+```
+
+```{r}
+ggsave("Figures/03 temperature effects in static covariate model including  depth.pdf",width=20, height=10)
+ggplot(affinity_df, aes(scale_temp, y_temp)) + geom_line() + 
+  facet_wrap(~species_common_name, scale="free_y") + 
+  theme(axis.text.y=element_blank())
+```
+
+```{r}
+ggsave("Figures/04 temperature effects in static covariate model no  depth.pdf",width=20, height=10)
+ggplot(affinity_df_nodepth, aes(scale_temp, y_temp_nodepth)) + 
+  geom_line() + 
+  facet_wrap(~species_common_name, scale="free_y") + 
+  theme(axis.text.y=element_blank())
+```
+
+```{r}
+ggsave("Figures/05 Delta o2 v delta temp effects in static model including depth.pdf",width=10, height=10)
+ggplot(stat_cov_df, aes(y_temp_delta_density, y_o2_delta_density, label=species_common_name)) + 
+  geom_point()+
+  geom_label_repel() + 
+  xlab("Effect of 1 sd temp on change in density") + ylab("Effect of 1 sd o2 on change in density") + 
+  geom_abline(col="red")
+```
+
+```{r}
+ggsave("Figures/06 Delta o2 v delta temp effects in static model no depth.pdf",width=10, height=10)
+ggplot(stat_cov_df_nodepth, aes(y_temp_delta_density_nodepth, y_o2_delta_density_nodepth, label=species_common_name)) + 
+  geom_point()+
+  geom_label_repel() + 
+  xlab("Effect of 1 sd temp on change in density") + ylab("Effect of 1 sd o2 on change in density") + 
+  geom_abline(col="red")
+```
+
+```{r}
+ggsave("Figures/07 Integral o2 v temp effects in static model including depth.pdf",width=10, height=10)
+ggplot(stat_cov_df, aes(integral_temp,integral_o2, label=species_common_name)) + 
+  geom_point()+
+  geom_label_repel() + 
+  xlab("Temperature niche area (integral)") + ylab("Oxygen niche area (integral)") + 
+  geom_abline(col="red")
+```
+
+```{r}
+ggsave("Figures/08 Integral o2 v temp effects in static model no depth.pdf",width=10, height=10)
+ggplot(stat_cov_df_nodepth, aes(integral_temp, integral_o2, label=species_common_name)) + 
+  geom_point()+
+  geom_label_repel() + 
+  xlab("Temperature niche area (integral)") + ylab("Oxygen niche area (integral)") + 
+  geom_abline(col="red")
+```
+
+
+
+
+```{r}
+
+# static covariate model, including depth
+o2_plots <- ggplot(affinity_df,aes(x=x,y=y_o2))+
+  geom_line() + 
+  facet_wrap(.~sciname)+
+  ylab("Density (kg)") +
+  xlab("Dissolved O2") +
+  ggtitle("Effects of dissolved oxygen on groundfish distributions") +
+  theme_classic() +
+    theme(legend.position = "none")
+print(o2_plots)
+ggsave("Figures/O2 affinities static covariate model including depth.pdf",width=20, height=10)
+
+temp_plots <- ggplot(affinity_df,aes(x=x,y=y_temp))+
+  geom_line() + 
+  facet_wrap(.~sciname)+
+  ylab("Density (kg)") +
+  xlab("Bottom temperature") +
+  ggtitle("Effects of bottom temperature on groundfish distributions") +
+  theme_classic() +
+    theme(legend.position = "none")
+temp_plots
+ggsave("Figures/Bottom temperature affinities static covariate model including depth.pdf",width=20, height=10)
+
+# static covariate model, excluding depth
+o2_plots_nodepth <- ggplot(affinity_df_nodepth,aes(x=x,y=y_o2_nodepth))+
+  geom_line() + 
+  facet_wrap(.~sciname)+
+  ylab("Density (kg)") +
+  xlab("Dissolved O2") +
+  ggtitle("Effects of dissolved oxygen on groundfish distributions") +
+  theme_classic() +
+    theme(legend.position = "none")
+print(o2_plots_nodepth)
+ggsave("Figures/O2 affinities static covariate model excluding depth.pdf",width=20, height=10)
+
+temp_plots_nodepth <- ggplot(affinity_df_nodepth,aes(x=x,y=y_temp_nodepth))+
+  geom_line() + 
+  facet_wrap(.~sciname)+
+  ylab("Density (kg)") +
+  xlab("Bottom temperature") +
+  ggtitle("Effects of bottom temperature on groundfish distributions") +
+  theme_classic() +
+    theme(legend.position = "none")
+temp_plots_nodepth
+ggsave("Figures/Bottom temperature affinities static covariate model excluding depth.pdf",width=20, height=10)
+
+```
+
+<br>
+<br>
+
+Plot temp and O2 affinities as change in expected density over 1SD change in env variable.
+
+```{r}
+
+
+
+```
+<br>

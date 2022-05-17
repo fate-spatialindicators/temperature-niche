@@ -2,7 +2,9 @@
 title: "Supplemental Information"
 author: "EW"
 date: "3/1/2021"
-output: pdf_document
+output:
+  pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -147,12 +149,11 @@ spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"),
     )  
 # note intercept is included at the end
 fit1 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
-       spde = spde,
+       mesh = spde,
        data = scaled_d,
        time="year",
        priors=priors,
-      control = sdmTMBcontrol(quadratic_roots = TRUE),
-       spatial_only = FALSE)
+      control = sdmTMBcontrol(quadratic_roots = TRUE))
 
 sd_report <- summary(fit1$sd_report)
     
@@ -187,11 +188,11 @@ spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"),
                  cutoff=25)
 # note intercept is included at the end
 fit2 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
-       spde = spde,
+       mesh = spde,
        data = scaled_d,
        priors=priors,
       control = sdmTMBcontrol(quadratic_roots = TRUE),
-       spatial_only = FALSE,
+       #spatial_only = FALSE,
        time="year")
 
 sd_report <- summary(fit2$sd_report)
@@ -240,12 +241,11 @@ spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"),
                  cutoff=25)
 # note intercept is included at the end
 fit3 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
-       spde = spde,
+       mesh = spde,
        data = scaled_d,
        time="year",
        priors=priors,
-      control = sdmTMBcontrol(quadratic_roots = TRUE),
-       spatial_only = FALSE)
+      control = sdmTMBcontrol(quadratic_roots = TRUE))
 
 sd_report <- summary(fit3$sd_report)
     
@@ -279,11 +279,11 @@ spde = make_mesh(scaled_d, xy_cols = c("longitude","latitude"),
                  cutoff=25)
 # note intercept is included at the end
 fit4 = sdmTMB(cpue_kg_km2 ~ -1 + temp + I(temp^2) + depth + I(depth^2) + as.factor(year), 
-       spde = spde,
+       mesh = spde,
        data = scaled_d,
        priors=priors,
       control = sdmTMBcontrol(quadratic_roots = TRUE),
-       spatial_only = FALSE,
+       #spatial_only = FALSE,
        time="year")
 
 sd_report <- summary(fit4$sd_report)

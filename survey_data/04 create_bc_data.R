@@ -33,8 +33,8 @@ spp <- tolower(c(
   "Pacific Sand Lance",
   # "Pacific Herring", # missing from synopsis data
   "Sablefish",
-  
-## ROCKFISH
+
+  ## ROCKFISH
   "Aurora Rockfish",
   "Bocaccio",
   "Canary Rockfish",
@@ -62,8 +62,8 @@ spp <- tolower(c(
   "Yelloweye Rockfish",
   "Longspine Thornyhead",
   "Shortspine Thornyhead",
-  
-## FLATFISH
+
+  ## FLATFISH
   "Pacific Halibut",
   "Arrowtooth Flounder",
   # "Butter Sole", # too localized
@@ -106,16 +106,17 @@ if (!file.exists(.file)) {
   dt <- dplyr::bind_rows(dt)
   dt <- dt %>% rename(survey_series_id = survey_series_id.x)
   dt2 <- dplyr::filter(dt, survey_series_id %in% c(1, 3, 4, 16)) %>%
-    dplyr::mutate(cpue_kg_km2 = density_kgpm2*1000000,
+    dplyr::mutate(
+      cpue_kg_km2 = density_kgpm2 * 1000000,
       fishing_event_id = as.integer(fishing_event_id),
       year = as.integer(year)
-      ) %>%
+    ) %>%
     dplyr::select(year,
       # ssid = survey_series_id,
       survey = survey_abbrev,
       species = species_common_name,
       scientific_name = species_science_name,
-      longitude_dd = longitude, #going to rely on fishing event id for merge with environmental data
+      longitude_dd = longitude, # going to rely on fishing event id for merge with environmental data
       latitude_dd = latitude,
       depth = depth_m,
       cpue_kg_km2,
@@ -235,19 +236,23 @@ saveRDS(env_data, "survey_data/bc-synoptic-env.rds")
 # read and join with
 env_data <- readRDS("survey_data/bc-synoptic-env.rds") %>% rename(longitude_dd = longitude, latitude_dd = latitude)
 trawl_data <- readRDS("survey_data/bc-synoptic-trawls.rds")
-dat <- left_join(trawl_data, env_data) %>% rename(
-  o2 = do, # much fewer years of complete data if o2 added in; if filtering for enviro only happens at last step is ok to keep
-  temp = temperature) %>% select(-depth_m, -salinity) %>% dplyr::filter(!is.na(longitude_dd), !is.na(latitude_dd))
+dat <- left_join(trawl_data, env_data) %>%
+  rename(
+    o2 = do, # much fewer years of complete data if o2 added in; if filtering for enviro only happens at last step is ok to keep
+    temp = temperature
+  ) %>%
+  select(-depth_m, -salinity) %>%
+  dplyr::filter(!is.na(longitude_dd), !is.na(latitude_dd))
 
 # filter by species that occur in 10% of hauls
-threshold = 0.1
+threshold <- 0.1
 
-keep = dat %>% 
-  mutate(occur = ifelse(cpue_kg_km2 > 0,1,0)) %>%
-  group_by(year, species) %>% 
-  summarize(p = sum(occur)/n()) %>% 
-  group_by(species) %>% 
-  summarize(mean_p = mean(p, na.rm=T)) %>% 
+keep <- dat %>%
+  mutate(occur = ifelse(cpue_kg_km2 > 0, 1, 0)) %>%
+  group_by(year, species) %>%
+  summarize(p = sum(occur) / n()) %>%
+  group_by(species) %>%
+  summarize(mean_p = mean(p, na.rm = T)) %>%
   filter(mean_p >= threshold)
 
 dat2 <- dplyr::filter(dat, species %in% keep$species)
@@ -256,9 +261,9 @@ sort(unique(dat$species)) # list all species
 sort(unique(dat2$species)) # list species that occur in >10% of hauls
 
 # remove trawls that are missing tempurature data, but this can be done later too?
-# dat2 <- dat2[complete.cases(dat2), ] 
+# dat2 <- dat2[complete.cases(dat2), ]
 
 # sounds like from text that we want to trim years before 2005 where spatial coverage was restricted to QCS?
 # dat2 <- dplyr::filter(dat2, year >= 2005)
-  
+
 saveRDS(dat2, "survey_data/joined_bc_data.rds")

@@ -1,11 +1,17 @@
 ---
-title: "Using spatiotemporal models and in-situ data to estimate the shape of the thermal niche: patterns and trends across groundfish species in the NE Pacific"
+title: 'Model based sensitivities and shapes of the thermal niche: patterns and trends
+  across groundfish species in the NE Pacific'
 author: "Eric J. Ward^1^"
 date: ''
-output: pdf_document
+output:
+  word_document: default
+  pdf_document: default
 bibliography: quadratic.bib
 csl: ices-journal-of-marine-science.csl
 ---
+
+Sean, Philina, Lewis
+others: Tim, Sam, Halle, Jameal, Chris, Scott, Kelli, Ole, Kayleigh, Mary, Kate, Jordan, Mike, Isaac
 
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE, tidy=FALSE, tidy.opts=list(width.cutoff=60), warning = FALSE, message = FALSE)
@@ -34,7 +40,7 @@ There are many frameworks and classes of models that have been used to describe 
 
 There are a number of existing approaches for quantifying the Grinnellian niche, or range of climatic conditions that a species might inhabit. Some previous studies have taken a largely empirical approach, using the observed range of environmental conditions where species are found [@tingley_birds_2009]. Model based approaches have also been developed, generally with presence-only data (e.g. ecological niche factor analysis, MaxEnt), though assumptions about absences may be problematic in some settings [@hirzel_habitat_2008]. Recognizing that there's no single approach that will perform best for all species and ecosystems [@qiao_no_2015], we aim to develop a strictly model-based approach to estimate properties of the Grinnellian niche, using georeferenced surveys of biological and abiotic responses. (Probably talk about some other examples here, e.g. [@givan_thermal_2018, @selden_diversity_2018])
 
-The objective of this paper is to extend existing spatiotemporal modeling tools to estimate the Grinnellian niche of groundfish species in the Northeast Pacific Ocean. Because temperature data have been recorded longer than other environmental variables, and are sampled around the world, we focus on quantifting the thermal niche.  We use three long term fisheries independent datasets collected across a gradient of temperature to (1) estimate the thermal niches for groundfish species to identify species with the widest and narrowest temperature affinities in each region, (2) ask whether differences in affinities exist between regions, and (3) develop spatial maps across species to identify areas of overlap. All code to reproduce our analysis is in our public Github repository, https://github.com/fate-spatialindicators/consonants-static.
+The objective of this paper is to extend existing spatiotemporal modeling tools to estimate the sensitivity of the thermal niche of groundfish species, and quantify changes in direction and width of the thermal niche through time. We focus on groundfish species from long term datasets from the Northeast Pacific Ocean. Using three long term fisheries independent datasets collected across a gradient of temperatures, we are able to (1) estimate the thermal niches for groundfish species to identify species with the widest and narrowest temperature affinities in each region, (2) ask whether differences in affinities exist between regions, and (3) develop spatial maps across species to identify areas of overlap. All code to reproduce our analysis is in our public Github repository, https://github.com/fate-spatialindicators/consonants-static.
 
 ## Methods
 
@@ -48,7 +54,7 @@ As each of these surveys collects data on a large number of species, we restrict
 
 ### Models 
 
-To estimate environmental affinities of groundfish species across the three survey regions, we extended a commonly used approach for these types of fisheries survey data. Spatiotemporal generalized linear mixed models (GLMMs) that have been widely used in fisheries to assess population status via index standardization [@thorson_geostatistical_2015], quantify range shifts [@thorson_model-based_2016; @maureaud_are_2021] and identify spatial areas with high recruitment [@tolimieri_spatio-temporal_2020]. These spatiotemporal GLMMs are flexible in that commonly used distribution families can be used to model the response. Because fisheries data are often skewed and zero-inflated, it has been common for applications of these models to use a hurdle or delta-framework with two submodels, represnting a model for the probability of occurrence, and a second sub-model representing positive catch rates. Though flexible, a downside of this approach is that interpretation may be more complex, as covariates and spatial variation may influence both the presence absence and positive part of the model. Alternatives to the hurdle model include modeling total density with a hurdle model, which has been used previously in the analysis of catch per unit effort (CPUE data) [@shono_application_2008; @anderson_reproducible_2019]. For the purposes of our estimation of thermal niche widths, we performed two sets of modeling: one set of models, using total density as the response with the Tweedie distribution, and a second set of models using presence-absence data as the response. 
+To estimate environmental affinities of groundfish species across the three survey regions, we extended a commonly used approach for these types of fisheries survey data. Spatiotemporal generalized linear mixed models (GLMMs) that have been widely used in fisheries to assess population status via index standardization [@thorson_geostatistical_2015], quantify range shifts [@thorson_model-based_2016; @maureaud_are_2021] and identify spatial areas with high recruitment [@tolimieri_spatio-temporal_2020]. These spatiotemporal GLMMs are flexible in that commonly used distribution families can be used to model the response. Because fisheries data are often skewed and zero-inflated, it has been common for applications of these models to use a hurdle or delta-framework with two submodels, represnting a model for the probability of occurrence, and a second sub-model representing positive catch rates. Though flexible, a downside of this approach is that interpretation may be more complex, as covariates and spatial variation may influence both the presence absence and positive part of the model. Alternatives to the hurdle model include modeling total density with a hurdle model, which has been used previously in the analysis of catch per unit effort (CPUE data) [@shono_application_2008; @anderson_reproducible_2019]. For the purposes of our estimation of thermal niche widths, we used the Tweedie distribution to model total groundfish density.
 
 The general form of the spatiotemporal GLMM can be represented as 
 
@@ -56,15 +62,21 @@ $$u_{s,t} = f^{-1}(\textbf{X}\textbf{b} + \mathbf{\omega_{s}} + \epsilon_{s,t})$
 
 where like a GLM, the $u_{s,t}$ represents the prediction at location $s$ and time $t$ in link space, $f^{-1}()$ is the inverse link function, $\textbf{X}$ represents a matrix of fixed effects coefficients (year effects, depth or environmental covariates) with estimated coefficients $\textbf{b}$. We separate the spatial variation $\mathbf{\omega_{s}} \sim MVN(\mathbf{0},\mathbf{\Sigma_{\omega}})$, from the year-to-year spatiotemporal variation $\mathbf{\epsilon_{t}} \sim MVN(\mathbf{0},\mathbf{\Sigma_{\epsilon}})$, where the spatial component represents a spatial intercept (as a random field) and the spatiotemporal component represents temporal deviations from that. 
 
-We constructed separate GLMMs by region, but used the same structure. Each model included fixed year effects, and random spatial and spatiotemporal effects. We estimated the thermal range for each species by including sampled bottom temperature as a quadratic fixed effect. As a sensitity, we also explored instead modeling temperature as a low-order spline with small df (k = 3). Perhaps two biggest decisions in our modeling involved whether or not to include depth, and whether or not to center variables. Just as oxygen and altitude are correlated in SDMs of terrestrial species, depth and temperature are highly correlated through most of the range included in our analysis (Fig. S1); these types of relationships have shown to be problematic for some SDMs [@junior_evaluating_2018; @feng_collinearity_2019]. We scaled temperature and log(depth), and included both as quadratic predictors in $\textbf{X}$. Thus, the interpretation of the temperature effects can be  measured in terms of standard deviations (for a point at average depth and spatial location).
+We constructed separate GLMMs by region, but used the same structure. Each model included fixed year effects, and random spatial and spatiotemporal effects. We estimated the thermal sensitivities for each species by including in-situ bottom temperature as a quadratic fixed effect. Perhaps two biggest decisions in our modeling involved whether or not to include depth, and whether or not to center variables [EW: I don't know we need this sentence]. Just as oxygen and altitude are correlated in SDMs of terrestrial species, depth and temperature are highly correlated through most of the range included in our analysis (Fig. S1); these types of relationships have shown to be problematic for some SDMs [@junior_evaluating_2018; @feng_collinearity_2019]. Depth was log-transformed and included as a penalized regression spline to account for non-linearities, and temperature was included as a quadratic predictor in $\textbf{X}$. Because of strong correlations between bottom temperature and depth on the west coast, we also ran models without depth included. 
 
-The spatial random fields were approximated using a triangulated mesh [@lindgren_explicit_2011] with vertices at 350 knots as calculated with the INLA R package [@rue_approximate_2009]. We found the minimum log likelihood using the R nlminb optimization routine with Template Model Builder (TMB; [@kristensen_tmb_2016]) implementing the Laplace approximation to the marginal likelihood. TMB uses the generalized delta-method to calculate standard errors. Specifically, we fit all models in R ver. 4.0.3 (R Core Team) using the package sdmTMB [@anderson_sdmtmb_2020] which interfaces automatic differentiation in Template Model Builder [@kristensen_tmb_2016] with INLA [@rue_approximate_2009].
+Latent spatial random fields, representing spatial variation not explained by other covariates, were approximated using a triangulated mesh [@lindgren_explicit_2011] with vertices at 350 knots as calculated with the INLA R package [@rue_approximate_2009]. We found the minimum log likelihood using the R nlminb optimization routine with Template Model Builder (TMB; [@kristensen_tmb_2016]) implementing the Laplace approximation to the marginal likelihood. TMB uses the generalized delta-method to calculate standard errors. Specifically, we fit all models in R 4.1.0 [r_core_team_2022] using the package sdmTMB [@anderson_sdmtmb_2022] which interfaces automatic differentiation in Template Model Builder [@kristensen_tmb_2016] with INLA [@rue_approximate_2009].
 
-### Estimating the size of the thermal niche
+### Estimating the sensitivity of the thermal niche
 
-We used the estimated quadratic coefficients on temperature to define properties of the thermal niche (also thermal affinities). Based on the shape of the relationships (Fig. 1), a number of derived parameters can be used to describe the area or steepness of the parabola---examples include the minimum and maximum vertices, width, height, and effect of a change in 1 standard deviation on the peak density. As many of these derived quantities are highly correlated, we chose to focus on the estimated temperature corresponding to peak density (point (c) Fig. 1), and width or difference between vertices ((b) - (a)). As temperature is scaled prior to model fitting, a temperature corresponding to peak density that is different from 0 indicates that that a species may benefit more (or less) from a change in temperature (it doesn't necessarily indicate a preference -- it just means that the species may be found at temperatures that are lower / higher, on average). Species with broad ranges---or wide and shallow parabolas---are expected to be less sensitive to changes in temperature than those with narrow ranges. 
+We used the estimated quadratic coefficients on temperature to define the sensitivity of the thermal niche. Based on the shape of the relationships (Fig. 1), a number of derived parameters can be used to describe the area or steepness ---examples include minimum and maximum vertices (quadratic roots), width, height, or the effect of a change in 1 standard deviation on the peak density. As many of these derived quantities are highly correlated, we chose to focus on the estimated temperature corresponding to peak density (point $(c)$ Fig. 1), and width or difference between vertices, $(b) - (a)$. The density of a species is estimated to increase over a range of temperatures between these vertices. Across species, those with broad ranges---or wide and shallow parabolas---are expected to be less sensitive to changes in temperature than those with narrow ranges. 
 
-### Comparisons across regions
+### Model based thermal niche widths
+
+
+
+Decision: include uncertainty or no?
+
+### Regional comparisons
 
 To compare results across ranges, we first focused on comparing the thermal niche width (range) and location (mid-point). 
 
@@ -73,6 +85,8 @@ Second, we looked at evidence for a relationships between the thermal niche widt
 
 
 ## Results  
+
+Thus, the interpretation of the temperature effects can be  measured in terms of standard deviations (for a point at average depth and spatial location).
 
 Because these variables are centered, the interpretation for temperature effects represents the effect of a change of ~ 1 SD 
 
@@ -95,9 +109,11 @@ To do
 
 ## Figure Legend
 
-Figure 1. Illustration of thermal niche parameters that may be derived from quadratic relationships between temperature and density. Vertices (a) and (b) are interpreted as minimum and maximum values, and their difference, (b) - (a), represents the niche width. Point (c) gives the temperature with maximum (or minimum) value (d). We quantify the effect of changing 1 standard deviation, (c) +/1 as (e); though to keep indicators on a relative scale, the ratio (d)/(e) can also be used.     
+Figure 1. Illustration of parameters that may be derived from quadratic relationships between temperature and density. Vertices (a) and (b) are interpreted as minimum and maximum values, and their difference, (b) - (a), represents the range of temperatures over which densities are expected to increase. Point (c) gives the temperature corresponding to maximum (or minimum) density (d). We quantify the effect of changing 1 standard deviation, (c) +/1 as (e); though to keep indicators on a relative scale, the ratio (d)/(e) can also be used.     
 
-Figure 2. Estimated thermal niches for groundfish species in the California Current (COW) and Gulf of Alaska (GOA). Grey points represent the estimated midpoint, and red and blue points represent the upper and lower bounds, respectively. Each point is shown +/- 2 SEs.
+Figure 2. Estimated quadratic parameters for groundfish species in the California Current (COW), British Columbia (BC), and Gulf of Alaska (GOA). Points represent the estimated midpoint, and lines represent the estimated ranges (quadratic roots).
+
+Figure 3. Comparison of quadratic parameters, with and without depth included, for groundfish species in the California Current (COW), British Columbia (BC), and Gulf of Alaska (GOA). Points represent the estimated midpoint, and lines represent the estimated ranges (quadratic roots).  
 
 \break  
 
@@ -178,58 +194,103 @@ all_spp = unique(c(df_wc$species,df_goa$species,df_bc$species))
 grid = expand.grid(species = all_spp, region = c("COW","BC","GOA")) # 43 sp x 3 regions
 df_all = left_join(grid, rbind(df_wc,df_bc,df_goa))
 
+# g1 = df_all %>% 
+#   ggplot(aes(species, mid)) +
+#   geom_pointrange(aes(ymin=mid-mid_se,ymax=mid+mid_se),col="black",alpha=0.4) + 
+#   geom_pointrange(aes(species, hi,ymin=hi-hi_se, ymax=hi+hi_se),col="red",alpha=0.4) +
+#   geom_pointrange(aes(species,lo, ymin=lo-lo_se, ymax=lo+lo_se),col="blue",alpha=0.4) + 
+#   facet_wrap(~region,scale="free_x") + 
+#   coord_flip() + xlab("Species") + ylab("") + 
+#   geom_vline(aes(xintercept=0), col="black") + 
+#   theme_bw()
+# g1
 g1 = df_all %>% 
-  ggplot(aes(species, mid)) +
-  geom_pointrange(aes(ymin=mid-mid_se,ymax=mid+mid_se),col="black",alpha=0.4) + 
-  geom_pointrange(aes(species, hi,ymin=hi-hi_se, ymax=hi+hi_se),col="red",alpha=0.4) +
-  geom_pointrange(aes(species,lo, ymin=lo-lo_se, ymax=lo+lo_se),col="blue",alpha=0.4) + 
-  facet_wrap(~region,scale="free_x") + 
-  coord_flip() + xlab("Species") + ylab("") + 
-  geom_vline(aes(xintercept=0), col="black") + 
-  theme_bw()
+  ggplot(aes(species, mid, col = region)) + 
+  geom_hline(aes(yintercept=0), col="red",alpha=0.3) +
+  geom_linerange(aes(ymin=lo, ymax = hi),alpha=0.5) + 
+  geom_point(alpha=0.5) + 
+  coord_flip() + 
+  xlab("Species") + 
+  ylab("") + 
+  theme_bw() + 
+  scale_color_viridis_d(end=0.8)
 g1
-
+ 
 ```
 
 \break  
 
 ```{r fig-boxplot, echo=FALSE, fig.height=4, fig.width=6}
+# 
+# # bring in various outputs -- use only quadratic results
+# wc = read.csv(file=here("output/wc_output.csv"), 
+#               stringsAsFactors = FALSE)
+# goa = read.csv(file=here("output/goa_output.csv"), 
+#               stringsAsFactors = FALSE)
+# bc = read.csv(file=here("output/goa_output.csv"), 
+#               stringsAsFactors = FALSE)
+# wc$Region = "COW"
+# goa$Region="GOA"
+# bc$Region="BC"
+# df = rbind(wc,goa,bc) %>% 
+#   dplyr::filter(quadratic==TRUE,converged==1) 
+# 
+# # drop out uncertain quadratic models
+# df = dplyr::mutate(df, quad_cv = abs(b_env2_se/b_env2)) %>%
+#   dplyr::filter(quad_cv < 0.5)
+# 
+# df$mid = 0.5*(df$hi + df$lo)
+# df$mid_se = sqrt((0.5^2)*(df$hi_se^2) + (0.5^2)*(df$lo_se^2))
+# 
+# g1 = ggplot(df, aes(Region, range, fill=Region,col=Region)) + 
+#   geom_boxplot(alpha=0.5) + 
+#   scale_fill_viridis(end=0.8,discrete = TRUE) + 
+#   scale_color_viridis(end=0.8,discrete = TRUE) + 
+#   geom_point(alpha=0.5, position = position_dodge2(0.02)) + 
+#   theme_bw() + xlab("") + 
+#   ylab("Range of thermal niche")
+# g2 = ggplot(df, aes(Region, mid, fill=Region,col=Region)) + 
+#   geom_boxplot(alpha=0.5) + 
+#   scale_fill_viridis(end=0.8,discrete = TRUE) + 
+#   scale_color_viridis(end=0.8,discrete = TRUE) + 
+#   geom_point(alpha=0.5, position = position_dodge2(0.02)) + 
+#   theme_bw() + xlab("") + 
+#   ylab("Midpoint of thermal niche")
+# gridExtra::grid.arrange(g1,g2,nrow=1)
+```
 
-# bring in various outputs -- use only quadratic results
-wc = read.csv(file=here("output/wc_output.csv"), 
+\break
+
+```{r fig-deptheffect, echo=FALSE, fig.height=4, fig.width=6}
+
+df_goa = read.csv(file=here(paste0("output/","goa","_output.csv")), 
               stringsAsFactors = FALSE)
-goa = read.csv(file=here("output/goa_output.csv"), 
+df_bc = read.csv(file=here(paste0("output/","bc","_output.csv")), 
               stringsAsFactors = FALSE)
-bc = read.csv(file=here("output/goa_output.csv"), 
+df_wc = read.csv(file=here(paste0("output/","wc","_output.csv")), 
               stringsAsFactors = FALSE)
-wc$Region = "COW"
-goa$Region="GOA"
-bc$Region="BC"
-df = rbind(wc,goa,bc) %>% 
-  dplyr::filter(quadratic==TRUE,converged==1) 
+df_goa$region = "goa"
+df_bc$region = "bc"
+df_wc$region = "wc"
 
-# drop out uncertain quadratic models
-df = dplyr::mutate(df, quad_cv = abs(b_env2_se/b_env2)) %>%
-  dplyr::filter(quad_cv < 0.5)
+df = rbind(df_goa, df_bc, df_wc) # bind together
+df$mid = 0.5*(df$hi + df$lo) # add midpoint
 
-df$mid = 0.5*(df$hi + df$lo)
-df$mid_se = sqrt((0.5^2)*(df$hi_se^2) + (0.5^2)*(df$lo_se^2))
+df_depth = dplyr::filter(df, depth_effect==TRUE) %>% 
+  dplyr::select(species, lo, mid, hi, region) %>%
+  dplyr::rename(depth_lo = lo, depth_mid = mid, depth_hi = hi)
+df_nodepth = dplyr::filter(df, depth_effect==FALSE) %>% 
+  dplyr::select(species, lo, mid, hi, region)
+df = dplyr::left_join(df_depth,df_nodepth)
 
-g1 = ggplot(df, aes(Region, range, fill=Region,col=Region)) + 
-  geom_boxplot(alpha=0.5) + 
-  scale_fill_viridis(end=0.8,discrete = TRUE) + 
-  scale_color_viridis(end=0.8,discrete = TRUE) + 
-  geom_point(alpha=0.5, position = position_dodge2(0.02)) + 
-  theme_bw() + xlab("") + 
-  ylab("Range of thermal niche")
-g2 = ggplot(df, aes(Region, mid, fill=Region,col=Region)) + 
-  geom_boxplot(alpha=0.5) + 
-  scale_fill_viridis(end=0.8,discrete = TRUE) + 
-  scale_color_viridis(end=0.8,discrete = TRUE) + 
-  geom_point(alpha=0.5, position = position_dodge2(0.02)) + 
-  theme_bw() + xlab("") + 
-  ylab("Midpoint of thermal niche")
-gridExtra::grid.arrange(g1,g2,nrow=1)
+g1 = ggplot(df, aes(depth_mid, mid,col=region)) + 
+  geom_linerange(aes(xmin = depth_lo, xmax = depth_hi), alpha=0.3) +
+  geom_linerange(aes(ymin = lo, ymax = hi), alpha = 0.3) +
+  geom_point(alpha=0.6) + 
+  xlab("Midpoint (depth included)") + 
+  ylab("Midpoint (depth not included)") + 
+  scale_color_viridis_d(end=0.8)
+g1
 ```
 
 \break 
