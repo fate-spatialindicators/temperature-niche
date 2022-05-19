@@ -1,12 +1,17 @@
 library(ggplot2)
 
 
-index = readRDS("output/temp_index_wc.rds")
+wc_index = readRDS("output/temp_index_wc.rds")
+goa_index = readRDS("output/temp_index_goa.rds")
+wc_index$region = "COW"
+goa_index$region = "GOA"
 
-
-g1 = ggplot(index, aes(year, est)) + 
-  geom_ribbon(aes(ymin=lwr, ymax=upr),fill="red",alpha=0.3,col=NA) + 
-  geom_line(alpha=0.7, col="red") + 
+index = rbind(wc_index, goa_index)
+index$region = as.factor(index$region)
+g1 = ggplot(index, aes(year, est, fill=region, col=region)) + 
+  geom_ribbon(aes(ymin=lwr, ymax=upr),alpha=0.3,col=NA) + 
+  geom_point(alpha=0.5) + 
+  geom_line(alpha=0.5) + 
   xlab("Year") + 
   ylab("Estimated temperature index") + 
   theme_bw()

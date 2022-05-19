@@ -2,8 +2,9 @@ library(ggplot2)
 library(dplyr)
 library(pals)
 
-all_temp = readRDS("output/temp_niche_wc.rds")
-all_empirical = readRDS("output/empirical_temp_niche_wc.rds")
+region = "wc"
+all_temp = readRDS(paste0("output/temp_niche_",region,".rds"))
+all_empirical = readRDS(paste0("output/empirical_temp_niche_",region,".rds"))
 
 # are there species that are broadening their niche?
 all_temp$enviro <- all_temp$enviro * temp_sd + temp_mean
@@ -53,12 +54,13 @@ g1 <- ggplot(summaries, aes(year, mean_est)) +
   xlab("Year") +
   theme(strip.background = element_rect(fill = "white")) +
   theme(strip.text.x = element_text(size = 5))
-ggsave(plot = g1, filename="plots/Figure_4.png", width=7,height=7)
+
+ggsave(plot = g1, filename=paste0("plots/Figure_4",region,".png"), width=7,height=7)
 
 g1 = g1 + 
   geom_line(aes(year, empirical_lo10), col = "red", linetype = "dashed") +
   geom_line(aes(year, empirical_hi10), col = "red", linetype = "dashed")
-ggsave(plot = g1, filename="plots/Figure_4_alt.png", width=7,height=7)
+ggsave(plot = g1, filename=paste0("plots/Figure_4_alt",region,".png"), width=7,height=7)
 
 # are there species that are broadening their niche?
 g1 <- ggplot(summaries, aes(year, hi10 - lo10)) +
@@ -69,6 +71,6 @@ g1 <- ggplot(summaries, aes(year, hi10 - lo10)) +
   theme(strip.text.x = element_text(size = 5)) +
   xlab("Year") +
   ylab("95% - 5% CI")
-ggsave(plot = g1, filename="plots/Figure_6.png", width=7,height=7)
+ggsave(plot = g1, filename=paste0("plots/Figure_6",region,".png"), width=7,height=7)
 
 
