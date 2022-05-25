@@ -114,5 +114,26 @@ index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
 saveRDS(index, "output/temp_index_goa.rds")
 
+# generate index for depths < 250
+pred_df$depth <- exp(pred_df$logdepth_orig)
+sub <- dplyr::filter(pred_df, abs(depth)<250)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_goa_250.rds")
 
+# generate index for depths 250 - 500
+sub <- dplyr::filter(pred_df, abs(depth)>=250, abs(depth) < 500)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_goa_250_500.rds")
 

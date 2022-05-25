@@ -50,9 +50,13 @@ all_spp = unique(c(df_wc$species,df_goa$species,df_bc$species))
 grid = expand.grid(species = all_spp, region = c("COW","BC","GOA")) # 43 sp x 3 regions
 df_all = left_join(grid, rbind(df_wc,df_bc,df_goa))
 
+df_all$species = paste0(toupper(substr(df_all$species,1,1)), 
+                    substr(df$species,2,nchar(df_all$species)))
+df_all = dplyr::rename(df_all, Region = region)
+
 png("plots/Figure_2.png")
 g1 = df_all %>% 
-  ggplot(aes(species, mid, col = region)) + 
+  ggplot(aes(species, mid, col = Region)) + 
   #geom_hline(aes(yintercept=0), col="red",alpha=0.3) +
   geom_linerange(aes(ymin=lo, ymax = hi),alpha=0.5) + 
   geom_point(alpha=0.5) + 
@@ -60,6 +64,7 @@ g1 = df_all %>%
   xlab("Species") + 
   ylab("") + 
   theme_bw() + 
-  scale_color_viridis_d(end=0.8)
+  scale_color_viridis_d(end=0.8) + 
+  theme(strip.background =element_rect(fill="white"))
 g1
 dev.off()

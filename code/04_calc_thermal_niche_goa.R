@@ -1,13 +1,13 @@
 library(dplyr)
 library(pals)
-df <- readRDS("output/wc/models.RDS")
+df <- readRDS("output/goa/models.RDS")
 
 # parameters for back transforming standardized_temp
 # temp_sd <- 1.983694
 # temp_mean <- 6.800925
 
 # gridded temp predictions
-pred_temp <- readRDS("output/wc_pred_temp.rds")
+pred_temp <- readRDS("output/goa_pred_temp.rds")
 pred_temp <- dplyr::rename(pred_temp, enviro = est)
 
 # this block looks if there's any year where an anomalous temp value
@@ -20,21 +20,21 @@ pred_temp <- dplyr::group_by(pred_temp, lat_lon) %>%
 
 #pred_temp$enviro <- (pred_temp$enviro - temp_mean) / temp_sd
 
-pred_temp_se <- readRDS("output/wc_pred_temp_uncertainty.rds")
+pred_temp_se <- readRDS("output/goa_pred_temp_uncertainty.rds")
 
 # dplyr::filter(pred_temp) %>%
 #   ggplot(aes(longitude,latitude,fill=enviro)) +
 #   geom_raster() + facet_wrap(~year)
 
 # the sdms use a variable called 'depth' but it's really log(depth)
-pred_temp$depth <- log(-pred_temp$depth)
-pred_temp$depth <- (pred_temp$depth - 5.614747) / 0.896874
+#pred_temp$depth <- log(-pred_temp$depth)
+pred_temp$depth <- (pred_temp$logdepth - 4.847777) / 0.6629802
 
-for (i in c(1:21, 23:nrow(df))) {
-  fit <- readRDS(file = paste0("output/wc/model_", i, ".rds"))
+for (i in c(1:nrow(df))) {
+  fit <- readRDS(file = paste0("output/goa/model_", i, ".rds"))
 
   # make predictions -- response not link space
-  pred_df <- predict(fit, pred_temp) # , type="response")
+  pred_df <- predict(fit, dplyr::filter(pred_temp,year %in% unique(fit$data$year))) # , type="response")
 
   # now for each year, sample ~ 10000 temp values to get distribution
   sampled_temp <- sample(pred_df$enviro, size = 10000, prob = exp(pred_df$est))
@@ -77,5 +77,5 @@ for (i in c(1:21, 23:nrow(df))) {
   #   ylab("Temperature")
 }
 
-saveRDS(all_temp, "output/temp_niche_wc.rds")
-saveRDS(all_empirical, "output/empirical_temp_niche_wc.rds")
+saveRDS(all_temp, "output/temp_niche_goa.rds")
+saveRDS(all_empirical, "output/empirical_temp_niche_goa.rds")
