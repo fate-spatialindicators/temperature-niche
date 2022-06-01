@@ -9,8 +9,13 @@ df_wc <- dplyr::mutate(df_wc, id = 1:nrow(df_wc)) %>%
   dplyr::filter(depth_effect==TRUE)
 df_goa <- dplyr::mutate(df_goa, id = 1:nrow(df_goa)) %>% 
   dplyr::filter(depth_effect==TRUE)
+# 'pacific spiny dogfish' in wc data
+# 'spiny dogfish' in goa data
+# 'north pacific spiny dogfish' in bc data
 df_wc$species = as.character(df_wc$species)
 df_goa$species = tolower(as.character(df_goa$species))
+df_wc$species[which(df_wc$species=="pacific spiny dogfish")] = "north pacific spiny dogfish"
+df_goa$species[which(df_goa$species=="spiny dogfish")] = "north pacific spiny dogfish"
 
 # overlap
 df_goa <- df_goa[which(df_goa$species%in% df_wc$species),]
@@ -50,6 +55,8 @@ for (i in 1:length(species)) {
   
   pred_df <- rbind(pred_df_goa[,c("year","est","enviro")], pred_df_wc[,c("year","est","enviro")])
   
+  common_years = unique(pred_df_goa$year)[which(unique(pred_df_goa$year) %in% unique(pred_df_wc$year))]
+  pred_df = dplyr::filter(pred_df, year %in% common_years)
   # now for each year, sample ~ 10000 temp values to get distribution
   sampled_temp <- sample(pred_df$enviro, size = 10000, prob = exp(pred_df$est))
 
@@ -60,7 +67,7 @@ for (i in 1:length(species)) {
   sampled_temp_year$lo95 <- quantile(sampled_temp, 0.025)
   sampled_temp_year$hi95 <- quantile(sampled_temp, 0.975)
   sampled_temp_year$species <- species[i]
-  sampled_temp_year$depth_effect <- df$depth_effect[i]
+  #sampled_temp_year$depth_effect <- df$depth_effect[i]
 
   if (i == 1) {
     all_temp <- sampled_temp_year

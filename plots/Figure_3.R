@@ -18,4 +18,4 @@ g1 = ggplot(index, aes(year, est, fill=Region, col=Region)) +
   scale_fill_viridis_d(end=0.8) + 
   scale_color_viridis_d(end=0.8)
 
-ggsave(plot = g1, filename="plots/Figure_5.png", width = 6, height = 5)
+ggsave(plot = g1, filename="plots/Figure_3.png", width = 6, height = 5)

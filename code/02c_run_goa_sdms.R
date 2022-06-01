@@ -28,6 +28,17 @@ summary <- read.csv("output/summary_statistics_goa.csv")
 summary <- dplyr::filter(summary, min_n >= 50)
 dat <- dplyr::filter(dat, species %in% summary$species)
 
+# drop sablefish, thornyheads for being deep -- spotty coverage
+# drop inverts and eulachon for being pelagic/poorly sampled
+dat <- dplyr::filter(dat, species %in% c("shortspine thornyhead",
+                                         "Alaskan pink shrimp",
+                                         "sidestripe shrimp",
+                                         "eulachon",
+                                         "shrimp unid.",
+                                         "sablefish",
+                                         "magistrate armhook squid",
+                                         "dusky and dark rockfishes unid.")==FALSE)
+
 # create grid of spp. Run each 2x, with and without
 # quadratic roots. without quadratic, use a smooth function instead
 df <- expand.grid(

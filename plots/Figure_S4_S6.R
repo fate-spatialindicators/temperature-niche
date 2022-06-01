@@ -39,17 +39,17 @@ emp_summaries <- as.data.frame(all_empirical) %>%
 
 summaries <- dplyr::left_join(summaries, emp_summaries)
 
-if(region=="goa") {
-  summaries = dplyr::filter(summaries, species %in% c("Alaskan pink shrimp",
-                                          "sidestripe shrimp",
-                                          "eulachon",
-                                          "shrimp unid.",
-                                          "sablefish",
-                                          "shortspine thornyhead",
-                                          "magistrate armhook squid",
-                                          "dusky and dark rockfishes unid.") == FALSE)
-  
-}
+# if(region=="goa") {
+#   summaries = dplyr::filter(summaries, species %in% c("Alaskan pink shrimp",
+#                                           "sidestripe shrimp",
+#                                           "eulachon",
+#                                           "shrimp unid.",
+#                                           "sablefish",
+#                                           "shortspine thornyhead",
+#                                           "magistrate armhook squid",
+#                                           "dusky and dark rockfishes unid.") == FALSE)
+#   
+# }
 
 summaries$species = as.character(summaries$species)
 summaries$species = paste0(toupper(substr(summaries$species,1,1)), 

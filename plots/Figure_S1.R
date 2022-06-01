@@ -11,13 +11,13 @@ df_bc$region = "BC"
 df_wc$region = "COW"
 
 # drop shrimp from GOA
-df_goa = dplyr::filter(df_goa, species %in% c("Alaskan pink shrimp",
-                                             "sidestripe shrimp",
-                                             "eulachon",
-                                             "shrimp unid.",
-                                             "sablefish",
-                                             "shortspine thornyhead",
-                                             "magistrate armhook squid") == FALSE)
+# df_goa = dplyr::filter(df_goa, species %in% c("Alaskan pink shrimp",
+#                                              "sidestripe shrimp",
+#                                              "eulachon",
+#                                              "shrimp unid.",
+#                                              "sablefish",
+#                                              "shortspine thornyhead",
+#                                              "magistrate armhook squid") == FALSE)
 
 df = rbind(df_goa, df_bc, df_wc) # bind together
 df$mid = 0.5*(df$hi + df$lo) # add midpoint

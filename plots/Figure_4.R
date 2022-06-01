@@ -29,6 +29,13 @@ summaries$species = as.character(summaries$species)
 summaries$species = paste0(toupper(substr(summaries$species,1,1)), 
                         substr(summaries$species,2,nchar(summaries$species)))
 
+# also add in the mean temp index
+wc_index = readRDS("output/temp_index_wc.rds")
+goa_index = readRDS("output/temp_index_goa.rds")
+temp_indx = rbind(wc_index, goa_index)
+temp_index = dplyr::group_by(temp_indx, year) %>%
+  dplyr::summarise(m = mean(est)) %>%
+  dplyr::filter(!is.na(m), year>=2003, year %in% seq(2003,2019,2), year <= 2018)
 
 g1 <- ggplot(dplyr::filter(summaries, year<2019), aes(year, mean_est)) +
   facet_wrap(~species, scale = "free") +
@@ -38,6 +45,7 @@ g1 <- ggplot(dplyr::filter(summaries, year<2019), aes(year, mean_est)) +
   geom_ribbon(aes(ymin = lo40, ymax = hi40), alpha = 0.7, fill = brewer.blues(6)[4]) +
   geom_ribbon(aes(ymin = lo50, ymax = hi50), alpha = 0.7, fill = brewer.blues(6)[5]) +
   geom_line(col = brewer.blues(6)[6], alpha = 0.5) +
+  geom_line(data=temp_index, aes(year,m),col="red") + 
   theme_bw() +
   # geom_hline(aes(yintercept=enviro_min),col="grey30",linetype="dashed") +
   # geom_hline(aes(yintercept=enviro_hi),col="grey30",linetype="dashed") +

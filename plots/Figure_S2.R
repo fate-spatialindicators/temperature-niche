@@ -8,13 +8,13 @@ goa = read.csv("output/goa_output.csv",
 bc = read.csv("output/bc_output.csv", 
                stringsAsFactors = FALSE)
 
-goa = dplyr::filter(goa, species %in% c("Alaskan pink shrimp",
-                                              "sidestripe shrimp",
-                                              "eulachon",
-                                              "shrimp unid.",
-                                              "sablefish",
-                                              "shortspine thornyhead",
-                                              "magistrate armhook squid") == FALSE)
+# goa = dplyr::filter(goa, species %in% c("Alaskan pink shrimp",
+#                                               "sidestripe shrimp",
+#                                               "eulachon",
+#                                               "shrimp unid.",
+#                                               "sablefish",
+#                                               "shortspine thornyhead",
+#                                               "magistrate armhook squid") == FALSE)
 
 wc$Region = "COW"
 goa$Region="GOA"
