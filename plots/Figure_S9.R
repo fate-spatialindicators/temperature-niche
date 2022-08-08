@@ -71,7 +71,7 @@ g1 <- ggplot(summaries, aes(year, mean_est, fill = Region, col =Region)) +
   #geom_ribbon(aes(ymin = lo20, ymax = hi20), alpha = 0.4) +
   #geom_ribbon(aes(ymin = lo30, ymax = hi30), alpha = 0.5) +
   #geom_ribbon(aes(ymin = lo40, ymax = hi40), alpha = 0.6) +
-  geom_ribbon(aes(ymin = lo50, ymax = hi50), alpha = 0.7, col=NA) +
+  geom_ribbon(aes(ymin = lo50, ymax = hi50), alpha = 0.5, col=NA) +
   #geom_line(alpha = 0.5) +
   theme_bw() +
   # geom_hline(aes(yintercept=enviro_min),col="grey30",linetype="dashed") +
