@@ -28,7 +28,7 @@ dat$date <- lubridate::parse_date_time(dat$date, order = "ymd")
 dat$yday <- lubridate::yday(dat$date)
 
 # just use haul info -- can be for any spp
-dat <- dplyr::filter(dat, scientific_name == scientific_name[1])
+dat <- dplyr::filter(dat, scientific_name == "Atheresthes stomias")
 
 # make mesh
 spde <- try(make_mesh(dat, c("longitude", "latitude"),

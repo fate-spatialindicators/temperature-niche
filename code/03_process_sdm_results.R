@@ -2,7 +2,7 @@ library(ggplot2)
 library(dplyr)
 library(sdmTMB)
 
-region <- c("goa", "wc", "bc")[1]
+region <- c("goa", "wc", "bc")[2]
 df <- readRDS(paste0("output/", region, "/models.RDS"))
 
 df$lo <- NA
@@ -47,7 +47,6 @@ for (i in 1:nrow(df)) {
     df$peak_se[i] <- params["quadratic_peak", "Std. Error"]
     df$reduction[i] <- params["quadratic_reduction", "Estimate"]
     df$reduction_se[i] <- params["quadratic_reduction", "Std. Error"]
-
 
     if (length(which(is.na(m$sd_report$sd))) == 0) df$converged[i] <- 1
 

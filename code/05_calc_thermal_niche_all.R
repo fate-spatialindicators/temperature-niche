@@ -45,13 +45,13 @@ for (i in 1:length(species)) {
   spp <- df_wc$id[which(df_wc$species==species[i])]
   fit <- readRDS(file = paste0("output/wc/model_", spp, ".rds"))
   # make predictions -- response not link space
-  pred_df_wc <- predict(fit, pred_temp_wc) # , type="response")
-
+  pred_df_wc <- predict(fit, newdata = dplyr::filter(pred_temp_wc, year %in% unique(fit$data$year))) # , type="response")
+  
   # GOA
   spp <- df_goa$id[which(df_goa$species==species[i])]
   fit <- readRDS(file = paste0("output/goa/model_", spp, ".rds"))
   # make predictions -- response not link space
-  pred_df_goa <- predict(fit, pred_temp_goa) # , type="response")
+  pred_df_goa <- predict(fit, newdata = dplyr::filter(pred_temp_goa, year %in% unique(fit$data$year))) # , type="response")
   
   pred_df <- rbind(pred_df_goa[,c("year","est","enviro")], pred_df_wc[,c("year","est","enviro")])
   

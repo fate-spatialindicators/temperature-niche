@@ -35,9 +35,9 @@ goa_index = readRDS("output/temp_index_goa.rds")
 temp_indx = rbind(wc_index, goa_index)
 temp_index = dplyr::group_by(temp_indx, year) %>%
   dplyr::summarise(m = mean(est)) %>%
-  dplyr::filter(!is.na(m), year>=2003, year %in% seq(2003,2019,2), year <= 2018)
+  dplyr::filter(!is.na(m), year>=2003, year %in% seq(2003,2021,2))
 
-g1 <- ggplot(dplyr::filter(summaries, year<2019), aes(year, mean_est)) +
+g1 <- ggplot(summaries, aes(year, mean_est)) +
   facet_wrap(~species, scale = "free") +
   geom_ribbon(aes(ymin = lo10, ymax = hi10), alpha = 0.7, fill = brewer.blues(6)[1]) +
   geom_ribbon(aes(ymin = lo20, ymax = hi20), alpha = 0.7, fill = brewer.blues(6)[2]) +

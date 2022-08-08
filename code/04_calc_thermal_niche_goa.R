@@ -31,6 +31,8 @@ pred_temp_se <- readRDS("output/goa_pred_temp_uncertainty.rds")
 pred_temp$depth <- (pred_temp$logdepth - 4.847777) / 0.6629802
 
 for (i in c(1:nrow(df))) {
+  if(file.exists(paste0("output/goa/model_", i, ".rds"))) {
+    
   fit <- readRDS(file = paste0("output/goa/model_", i, ".rds"))
 
   # make predictions -- response not link space
@@ -49,7 +51,8 @@ for (i in c(1:nrow(df))) {
   sampled_temp_year$depth_effect <- df$depth_effect[i]
 
   # do empirical sampling
-  empirical_temp_year <- dplyr::group_by(fit$data, year) %>%
+  empirical_temp_year <- dplyr::filter(fit$data, !is.na(cpue_kg_km2)) %>%
+    dplyr::group_by(year) %>%
     do(sample_n(., size = 10000, replace = T, weight = cpue_kg_km2))
   empirical_temp_year$species <- df$species[i]
   empirical_temp_year$depth_effect <- df$depth_effect[i]
@@ -75,6 +78,7 @@ for (i in c(1:nrow(df))) {
   #   geom_line() +
   #   xlab("Year") +
   #   ylab("Temperature")
+  }
 }
 
 saveRDS(all_temp, "output/temp_niche_goa.rds")

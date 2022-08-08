@@ -6,6 +6,12 @@ library(stringr)
 # bring in common names
 # UrlText <- "https://www.nwfsc.noaa.gov/data/api/v1/source/trawl.catch_fact/selection.json?filters=project=Groundfish%20Slope%20and%20Shelf%20Combination%20Survey,date_dim$year>=2003&variables=common_name,scientific_name"
 # DataPull <- try(jsonlite::fromJSON(UrlText))
+#catch <- nwfscSurvey::PullCatch.fn(SurveyName = "NWFSC.Combo")
+#saveRDS(catch, "survey_data/wcbts_catch_2022-08-01.rds")
+#haul <- nwfscSurvey::PullHaul.fn(SurveyName = "NWFSC.Combo")
+#saveRDS(haul, "survey_data/wcbts_haul_2022-08-01.rds")
+#bio <- nwfscSurvey::PullBio.fn(SurveyName = "NWFSC.Combo")
+#saveRDS(bio, "survey_data/wcbts_bio_2022-08-01.rds")
 # spec_names = group_by(DataPull, common_name) %>%
 #  dplyr::summarize(scientific_name = scientific_name[1])
 # spec_names$scientific_name = tolower(spec_names$scientific_name)
@@ -13,7 +19,7 @@ library(stringr)
 
 spec_names <- readRDS("survey_data/nwfsc_species_lookup.rds")
 
-catch <- readRDS("survey_data/wcbts_catch_2019-08-01.rds")
+catch <- readRDS("survey_data/wcbts_catch_2022-08-01.rds")
 names(catch) <- tolower(names(catch))
 catch$date <- as.character(catch$date)
 catch$trawl_id <- as.numeric(catch$trawl_id)
@@ -21,7 +27,7 @@ catch$scientific_name <- tolower(catch$scientific_name)
 catch <- dplyr::left_join(catch, spec_names)
 catch$common_name <- tolower(catch$common_name)
 
-haul <- readRDS("survey_data/wcbts_haul_2019-08-01.rds")
+haul <- readRDS("survey_data/wcbts_haul_2022-08-01.rds")
 
 # haul = dplyr::select(haul, date_yyyymmdd,depth_hi_prec_m,latitude_dd,longitude_dd,temperature_at_gear_c_der)
 # write.table(haul, "data_for_mike.csv",sep=",",row.names=FALSE)

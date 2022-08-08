@@ -30,7 +30,9 @@ pred_temp_se <- readRDS("output/wc_pred_temp_uncertainty.rds")
 pred_temp$depth <- log(-pred_temp$depth)
 pred_temp$depth <- (pred_temp$depth - 5.614747) / 0.896874
 
-for (i in c(1:21, 23:nrow(df))) {
+for (i in c(1:nrow(df))) {
+  if(file.exists(paste0("output/wc/model_", i, ".rds"))) {
+    
   fit <- readRDS(file = paste0("output/wc/model_", i, ".rds"))
 
   # make predictions -- response not link space
@@ -75,6 +77,7 @@ for (i in c(1:21, 23:nrow(df))) {
   #   geom_line() +
   #   xlab("Year") +
   #   ylab("Temperature")
+  }
 }
 
 saveRDS(all_temp, "output/temp_niche_wc.rds")
