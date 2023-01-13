@@ -1,9 +1,11 @@
-# devtools::install_github("pbs-assess/sdmTMB")
+# devtools::install_github("pbs-assess/sdmTMB", "quadratic-roots)
 library(sdmTMB)
 library(dplyr)
 library(sp)
 
-dat <- readRDS("survey_data/joined_bc_data.rds")
+dat <- readRDS("survey_data/bc_data_2021.rds")
+dat <- dplyr::select(dat, -start_time, -count, -sensor_name) %>%
+  dplyr::rename(temp = temperature)
 
 # base model configuration
 model_config <- ""

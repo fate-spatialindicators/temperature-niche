@@ -3,7 +3,9 @@ library(sdmTMB)
 library(dplyr)
 library(sp)
 
-dat <- readRDS("survey_data/joined_bc_data.rds")
+dat <- readRDS("survey_data/bc_data_2021.rds")
+dat <- dplyr::select(dat, -start_time, -count, -sensor_name) %>%
+  dplyr::rename(temp = temperature)
 
 # UTM transformation
 dat_ll <- dat
@@ -42,13 +44,13 @@ priors <- sdmTMBpriors(
 )
 
 dat$fyear <- as.factor(dat$year)
-mu_logdepth <- mean(dat$logdepth)
-sd_logdepth <- sd(dat$logdepth)
+mu_logdepth <- mean(dat$logdepth) # 5.040364
+sd_logdepth <- sd(dat$logdepth) # 0.6627643
 dat$logdepth <- (dat$logdepth - mu_logdepth) / sd_logdepth
 # dat$yday = scale(dat$yday)
 fit <- sdmTMB(temp ~ s(logdepth), # s(yday) + s(logdepth),
   # time_varying ~ logdepth + I(logdepth^2) + I(logepth^3),
-  spde = spde,
+  mesh = spde,
   time = "year",
   data = dat,
   # priors=priors,
@@ -85,8 +87,8 @@ pred_df$yday <- (182 - 215.5617) / 47.76773 # Day 182 = July 1
 
 # make a prediction for what this will be
 pred_temp <- predict(fit, pred_df)
-saveRDS(pred_temp, "output/wc_pred_temp.rds")
+saveRDS(pred_temp, "output/bc_pred_temp.rds")
 
-# also generate samples to propogate uncertainty
+# also generate samples to propagate uncertainty
 pred_temp <- predict(fit, pred_df, nsim = 100)
-saveRDS(pred_temp, "output/wc_pred_temp_uncertainty.rds")
+saveRDS(pred_temp, "output/bc_pred_temp_uncertainty.rds")

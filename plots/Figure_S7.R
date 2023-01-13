@@ -64,15 +64,14 @@ summaries <- dplyr::group_by(summaries, species, year) %>%
   dplyr::filter(n == 2) %>%
   dplyr::select(-n)
 
-summaries <- dplyr::rename(summaries, Region = region)
-g1 <- ggplot(summaries, aes(year, mean_est, fill = Region, col =Region)) +
+g1 <- ggplot(summaries, aes(year, mean_est, fill = region, col = region)) +
   facet_wrap(~species, scale = "free") +
-  geom_ribbon(aes(ymin = lo10, ymax = hi10), alpha = 0.1, col=NA) +
+  geom_ribbon(aes(ymin = lo10, ymax = hi10), alpha = 0.3, col=NA) +
   #geom_ribbon(aes(ymin = lo20, ymax = hi20), alpha = 0.4) +
   #geom_ribbon(aes(ymin = lo30, ymax = hi30), alpha = 0.5) +
   #geom_ribbon(aes(ymin = lo40, ymax = hi40), alpha = 0.6) +
-  geom_ribbon(aes(ymin = lo50, ymax = hi50), alpha = 0.3, col=NA) +
-  #geom_line(alpha = 0.5) +
+  geom_ribbon(aes(ymin = lo50, ymax = hi50), alpha = 0.7, col=NA) +
+  geom_line(alpha = 0.5) +
   theme_bw() +
   # geom_hline(aes(yintercept=enviro_min),col="grey30",linetype="dashed") +
   # geom_hline(aes(yintercept=enviro_hi),col="grey30",linetype="dashed") +
@@ -80,7 +79,6 @@ g1 <- ggplot(summaries, aes(year, mean_est, fill = Region, col =Region)) +
   xlab("Year") +
   theme(strip.background = element_rect(fill = "white")) +
   theme(strip.text.x = element_text(size = 6),
-        axis.text = element_text(size = 7)) + 
-  scale_fill_viridis_d(end=0.8)
+        axis.text = element_text(size = 7))
 
-ggsave(plot = g1, filename=paste0("plots/Figure_S9",".png"), width=7,height=7)
+ggsave(plot = g1, filename=paste0("plots/Figure_S7",region,".png"), width=7,height=7)
