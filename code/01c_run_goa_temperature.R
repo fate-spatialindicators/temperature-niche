@@ -93,7 +93,7 @@ pred_df <- expand.grid(
   year = unique(dat$year)
 )
 pred_df <- dplyr::left_join(pred_df, grid)
-pred_df$yday <- (182 - 182.8378) / 22.77178 # Day 182 = July 1
+pred_df$yday <- (182 - 182.932) / 22.65317 # Day 182 = July 1
 
 # make a prediction for what this will be
 pred_temp <- predict(fit, pred_df)

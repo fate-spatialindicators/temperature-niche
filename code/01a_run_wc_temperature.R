@@ -69,8 +69,8 @@ grid <- dplyr::rename(grid, longitude = X, latitude = Y) %>%
   dplyr::mutate(logdepth = log(-depth))
 
 grid$lat_lon <- paste(grid$latitude, grid$longitude)
-grid$latitude <- grid$latitude * 10
-grid$longitude <- grid$longitude * 10
+#grid$latitude <- grid$latitude * 10
+#grid$longitude <- grid$longitude * 10
 
 # scale the grid variables
 grid$logdepth_orig <- grid$logdepth
@@ -83,7 +83,7 @@ pred_df <- expand.grid(
   year = unique(dat$year)
 )
 pred_df <- dplyr::left_join(pred_df, grid)
-pred_df$yday <- (182 - 215.5617) / 47.76773 # Day 182 = July 1
+pred_df$yday <- (182 - 215.308) / 47.80325 # Day 182 = July 1
 
 # make a prediction for what this will be
 pred_temp <- predict(fit, pred_df)

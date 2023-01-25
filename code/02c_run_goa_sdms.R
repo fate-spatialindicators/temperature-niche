@@ -1,3 +1,4 @@
+# devtools::install_github("pbs-assess/sdmTMB", "quadratic-roots")
 library(sdmTMB)
 library(dplyr)
 library(sp)
