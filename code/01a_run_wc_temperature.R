@@ -53,7 +53,6 @@ fit <- sdmTMB(temp ~ s(yday) + s(logdepth), # s(yday) + s(logdepth),
   mesh = spde,
   time = "year",
   data = dat,
-  # priors=priors,
   spatial = "off",
   spatiotemporal = "iid"
 )
@@ -69,12 +68,12 @@ grid <- dplyr::rename(grid, longitude = X, latitude = Y) %>%
   dplyr::mutate(logdepth = log(-depth))
 
 grid$lat_lon <- paste(grid$latitude, grid$longitude)
-#grid$latitude <- grid$latitude * 10
-#grid$longitude <- grid$longitude * 10
+grid$latitude <- grid$latitude * 10
+grid$longitude <- grid$longitude * 10
 
 # scale the grid variables
 grid$logdepth_orig <- grid$logdepth
-# mu_logdepth = 5.611607, sd_logdepth = 0.8952397
+# mu_logdepth = 5.606277, sd_logdepth = 0.8947727
 grid$logdepth <- (grid$logdepth - mu_logdepth) / sd_logdepth
 
 

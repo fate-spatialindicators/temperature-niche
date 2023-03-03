@@ -42,13 +42,15 @@ dat <- dplyr::filter(dat, species %in% summary$species)
 df <- expand.grid(
   "species" = unique(dat$species),
   spatial_only = c(FALSE),
-  depth_effect = c(TRUE, FALSE),
+  depth_effect = c(TRUE),
   time_varying = c(FALSE),
   quadratic = c(TRUE),
   covariate = c("temp")
 )
 saveRDS(df, "output/bc/models.RDS")
 
+presence_only = FALSE
+presence_str = ifelse(presence_only, "_presence","")
 
 for (i in 1:nrow(df)) {
   sub <- dplyr::filter(dat, species == df$species[i])
@@ -74,11 +76,11 @@ for (i in 1:nrow(df)) {
   # sub$enviro_sd = sd(sub$enviro)
 
   # rescale variables
-  sub$depth <- as.numeric((log(sub$depth))) # scaled globally
+  sub$depth <- as.numeric(scale(log(sub$depth))) # scaled globally
   # sub$depth = as.numeric((log(sub$depth)-sub$depth_mean)/sub$depth_sd)
-  # sub$enviro = as.numeric((scale(sub$enviro)))
+  #sub$enviro = as.numeric((scale(sub$enviro)))
   # sub$enviro = as.numeric((sub$enviro-sub$enviro_mean)/sub$enviro_sd)
-
+  sub$presence <- ifelse(sub$cpue_kg_km2 > 0, 1, 0)
   # browser()
   # make spde
   spde <- try(make_mesh(sub, c("longitude", "latitude"),
@@ -88,7 +90,7 @@ for (i in 1:nrow(df)) {
   # browser()
   if (class(spde) != "try-error") {
     formula <- paste0("cpue_kg_km2 ~ -1")
-
+    if(presence_only) formula <- paste0("presence ~ -1")
     time_formula <- "~ -1"
 
     if (df$quadratic[i] == TRUE) {
@@ -110,7 +112,7 @@ for (i in 1:nrow(df)) {
     formula <- paste0(formula, " + as.factor(year)") # + survey # I experimented with adding survey and it
 
     if (df$depth_effect[i] == TRUE) {
-      formula <- paste0(formula, " + s(depth)") # formula = paste0(formula, " + depth + I(depth^2)")
+      formula <- paste0(formula, " + depth + I(depth^2)") # formula = paste0(formula, " + depth + I(depth^2)")
     }
 
     # use PC prior for matern model
@@ -121,21 +123,36 @@ for (i in 1:nrow(df)) {
       )
     )
     # fit model
-    m <- try(sdmTMB(
-      formula = as.formula(formula),
-      time_varying = time_varying,
-      mesh = spde,
-      time = time,
-      family = tweedie(link = "log"),
-      data = sub,
-      priors = priors,
-      spatial = "on",
-      spatiotemporal = "iid",
-      control = sdmTMBcontrol(quadratic_roots = df$quadratic[i])
-    ), silent = TRUE)
+    if(presence_only==TRUE) {
+      m <- try(sdmTMB(
+        formula = as.formula(formula),
+        time_varying = time_varying,
+        mesh = spde,
+        time = time,
+        family = binomial(),
+        data = sub,
+        priors = priors,
+        spatial = "on",
+        spatiotemporal = "iid",
+        control = sdmTMBcontrol(quadratic_roots = df$quadratic[i])
+      ), silent = TRUE) 
+    } else {
+      m <- try(sdmTMB(
+        formula = as.formula(formula),
+        time_varying = time_varying,
+        mesh = spde,
+        time = time,
+        family = tweedie(link = "log"),
+        data = sub,
+        priors = priors,
+        spatial = "on",
+        spatiotemporal = "iid",
+        control = sdmTMBcontrol(quadratic_roots = df$quadratic[i])
+      ), silent = TRUE) 
+    }
 
     if (class(m) != "try-error") {
-      saveRDS(m, file = paste0("output/bc/model_", i, ".rds"))
+      saveRDS(m, file = paste0("output/bc/model_", i,presence_str, ".rds"))
     }
   } # end try on spde
 }

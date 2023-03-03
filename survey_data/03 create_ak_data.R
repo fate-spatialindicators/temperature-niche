@@ -83,3 +83,44 @@ d <- dplyr::filter(d, depth > 0)
 d <- dplyr::filter(d, year %in% c(1984, 1987, 2001) == FALSE)
 
 saveRDS(d, "survey_data/joined_goa_data.rds")
+
+
+# make sure 0s are added
+d = readRDS("survey_data/joined_goa_data.rds")
+d = dplyr::filter(d, !is.na(cpue_kg_km2))
+d$species = tolower(d$species)
+
+d$latlon <- paste(d$latitude_dd, d$longitude_dd)
+d_2021 = expand.grid(species = unique(d$species), 
+                     latlon = unique(d$latlon[which(d$year==2021)]))
+
+pos <- dplyr::filter(d, year == 2021)
+s <- pos %>%
+  dplyr::group_by(latlon) %>%
+  dplyr::summarise(survey = survey[1],
+                   depth = depth[1],
+                   surface_temperature = surface_temperature[1],
+                   temp = temp[1],
+                   latitude_dd = latitude_dd[1],
+                   longitude_dd = longitude_dd[1],
+                   date = date[1],
+                   day = day[1],
+                   month = month[1])
+
+# join in metadata 
+d_2021 <- dplyr::left_join(d_2021, pos[,c("species", "latlon","cpue_kg_km2")])
+spp <- dplyr::group_by(d, species) %>%
+  dplyr::summarize(species_code = species_code[1],
+                   scientific_name = scientific_name[1])
+# join in haul info
+d_2021 <- dplyr::left_join(d_2021, s)
+d_2021$cpue_kg_km2[which(is.na(d_2021$cpue_kg_km2))] = 0
+d_2021 <- dplyr::select(d_2021, -latlon)
+d <- dplyr::select(d, -latlon)
+
+d_2021 <- dplyr::left_join(d_2021, spp)
+d_2021$year <- 2021
+
+d <- dplyr::filter(d, year!=2021)
+d <- rbind(d, d_2021)
+saveRDS(d, "survey_data/joined_goa_data.rds")

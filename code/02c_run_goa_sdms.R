@@ -45,12 +45,15 @@ dat <- dplyr::filter(dat, species %in% c("shortspine thornyhead",
 df <- expand.grid(
   "species" = unique(dat$species),
   spatial_only = c(FALSE),
-  depth_effect = c(TRUE, FALSE),
+  depth_effect = c(TRUE),
   time_varying = c(FALSE),
   quadratic = c(TRUE),
   covariate = c("temp")
 )
 saveRDS(df, "output/goa/models.RDS")
+
+presence_only = TRUE
+presence_str = ifelse(presence_only, "_presence","")
 
 # note that not all years are included: 1990-1999 (3 year survey), 2003-2019
 
@@ -72,14 +75,16 @@ for (i in 1:nrow(df)) {
 
   # rename variables to make code generic
   sub <- dplyr::rename(sub, enviro = as.character(df$covariate[i]))
-
+  sub$presence <- ifelse(sub$cpue_kg_km2 > 0, 1, 0)
+  
   # make spde
   spde <- try(make_mesh(sub, c("longitude", "latitude"),
     cutoff = 30
   ), silent = TRUE)
   if (class(spde) != "try-error") {
     formula <- paste0("cpue_kg_km2 ~ -1")
-
+    if(presence_only) formula <- paste0("presence ~ -1")
+    
     time_formula <- "~ -1"
     if (df$time_varying[i] == TRUE) {
       time_formula <- paste0(
@@ -108,7 +113,7 @@ for (i in 1:nrow(df)) {
     formula <- paste0(formula, " + as.factor(year)")
 
     if (df$depth_effect[i] == TRUE) {
-      formula <- paste0(formula, " + s(depth)")
+      formula <- paste0(formula, " + depth + I(depth^2)")
     }
 
     # use PC prior for matern model
@@ -119,25 +124,40 @@ for (i in 1:nrow(df)) {
       )
     )
     # fit model
-    m <- try(sdmTMB(
-      formula = as.formula(formula),
-      time_varying = time_varying,
-      mesh = spde,
-      time = time,
-      family = tweedie(link = "log"),
-      data = sub,
-      priors = priors,
-      spatial = "on",
-      spatiotemporal = "iid",
-      control = sdmTMBcontrol(quadratic_roots = df$quadratic[i])
-    ), silent = TRUE)
+    if(presence_only==TRUE) {
+      m <- try(sdmTMB(
+        formula = as.formula(formula),
+        time_varying = time_varying,
+        mesh = spde,
+        time = time,
+        family = binomial(),
+        data = sub,
+        priors = priors,
+        spatial = "on",
+        spatiotemporal = "iid",
+        control = sdmTMBcontrol(quadratic_roots = df$quadratic[i])
+      ), silent = TRUE) 
+    } else {
+      m <- try(sdmTMB(
+        formula = as.formula(formula),
+        time_varying = time_varying,
+        mesh = spde,
+        time = time,
+        family = tweedie(link = "log"),
+        data = sub,
+        priors = priors,
+        spatial = "on",
+        spatiotemporal = "iid",
+        control = sdmTMBcontrol(quadratic_roots = df$quadratic[i])
+      ), silent = TRUE) 
+    }
 
     # sd_report <- summary(m$sd_report)
     # params <- as.data.frame(sd_report[grep("quadratic",
     #  row.names(sd_report)), ])
 
     if (class(m) != "try-error") {
-      saveRDS(m, file = paste0("output/goa/model_", i, ".rds"))
+      saveRDS(m, file = paste0("output/goa/model_", i,presence_str, ".rds"))
     }
   } # end try on spde
 }

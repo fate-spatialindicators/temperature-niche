@@ -3,17 +3,20 @@ library(ggplot2)
 
 wc_index = readRDS("output/temp_index_wc.rds")
 goa_index = readRDS("output/temp_index_goa.rds")
+bc_index = readRDS("output/temp_index_bc.rds")
+
 wc_index$region = "COW"
 goa_index$region = "GOA"
+bc_index$region = "BC"
 
-index = rbind(wc_index, goa_index)
+index = rbind(wc_index, goa_index, bc_index)
 index$Region = as.factor(index$region)
 g1 = ggplot(index, aes(year, est, fill=Region, col=Region)) + 
   geom_ribbon(aes(ymin=lwr, ymax=upr),alpha=0.3,col=NA) + 
   geom_point(alpha=0.5) + 
   geom_line(alpha=0.5) + 
   xlab("Year") + 
-  ylab("Estimated temperature index") + 
+  ylab(expression(paste("Temperature index ", degree, "C"))) + 
   theme_bw() + 
   scale_fill_viridis_d(end=0.8) + 
   scale_color_viridis_d(end=0.8)

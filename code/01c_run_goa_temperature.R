@@ -35,12 +35,12 @@ spde <- try(make_mesh(dat, c("longitude", "latitude"),
   cutoff = 20
 ), silent = TRUE)
 
-priors <- sdmTMBpriors(
-  matern_s = pc_matern(
-    range_gt = 5, range_prob = 0.05,
-    sigma_lt = 25, sigma_prob = 0.05
-  )
-)
+# priors <- sdmTMBpriors(
+#   matern_s = pc_matern(
+#     range_gt = 5, range_prob = 0.05,
+#     sigma_lt = 25, sigma_prob = 0.05
+#   )
+# )
 
 dat$fyear <- as.factor(dat$year)
 mu_logdepth <- mean(dat$logdepth)
@@ -53,7 +53,6 @@ fit <- sdmTMB(temp ~ s(yday) + s(logdepth), # s(yday) + s(logdepth),
   mesh = spde,
   time = "year",
   data = dat,
-  # priors=priors,
   spatial = "off",
   spatiotemporal = "iid"
 )
@@ -61,10 +60,11 @@ fit <- sdmTMB(temp ~ s(yday) + s(logdepth), # s(yday) + s(logdepth),
 grid <- read.csv("grid_data/grid_goa.csv")
 
 grid <- dplyr::rename(grid, 
+                      depth = DEPTH_EFH,
                       logdepth = LOG_DEPTH_EFH,
                       latitude_dd = Lat,
                       longitude_dd = Lon) %>% 
-  dplyr::select(Id, logdepth, latitude_dd, longitude_dd)
+  dplyr::select(Id, logdepth, latitude_dd, longitude_dd, Area_km2, depth)
 
 grid_ll <- grid
 coordinates(grid_ll) <- c("longitude_dd", "latitude_dd")
@@ -85,7 +85,7 @@ grid$lat_lon <- paste(grid$latitude, grid$longitude)
 
 # scale the grid variables
 grid$logdepth_orig <- grid$logdepth
-# mu_logdepth = 5.611607, sd_logdepth = 0.8952397
+# mu_logdepth = 4.847897, sd_logdepth = 0.665218
 grid$logdepth <- (grid$logdepth - mu_logdepth) / sd_logdepth
 
 pred_df <- expand.grid(

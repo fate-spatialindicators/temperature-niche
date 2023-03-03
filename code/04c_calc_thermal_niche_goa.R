@@ -1,5 +1,8 @@
 library(dplyr)
 library(pals)
+
+set.seed(1234)
+
 df <- readRDS("output/goa/models.RDS")
 
 # parameters for back transforming standardized_temp
@@ -17,18 +20,16 @@ pred_temp <- dplyr::group_by(pred_temp, lat_lon) %>%
   dplyr::mutate(n = length(which(abs(enviro) > 14))) %>%
   dplyr::filter(n == 0) %>%
   dplyr::select(-n)
+pred_temp <- dplyr::filter(pred_temp, enviro > 0)
 
-#pred_temp$enviro <- (pred_temp$enviro - temp_mean) / temp_sd
-
-pred_temp_se <- readRDS("output/goa_pred_temp_uncertainty.rds")
-
-# dplyr::filter(pred_temp) %>%
-#   ggplot(aes(longitude,latitude,fill=enviro)) +
-#   geom_raster() + facet_wrap(~year)
+totarea = dplyr::group_by(pred_temp, year) %>% 
+  dplyr::summarise(tot_area = sum(Area_km2))
+totarea <- totarea$tot_area[1] # same in all years
+#pred_temp_se <- readRDS("output/goa_pred_temp_uncertainty.rds")
 
 # the sdms use a variable called 'depth' but it's really log(depth)
-#pred_temp$depth <- log(-pred_temp$depth)
-pred_temp$depth <- (pred_temp$logdepth - 4.847777) / 0.6629802
+pred_temp$depth <- log(pred_temp$depth)
+pred_temp$depth <- (pred_temp$depth - 4.847897) / 0.665218
 
 for (i in c(1:nrow(df))) {
   if(file.exists(paste0("output/goa/model_", i, ".rds"))) {
@@ -38,48 +39,54 @@ for (i in c(1:nrow(df))) {
   # make predictions -- response not link space
   pred_df <- predict(fit, dplyr::filter(pred_temp,year %in% unique(fit$data$year))) # , type="response")
 
-  # now for each year, sample ~ 10000 temp values to get distribution
-  sampled_temp <- sample(pred_df$enviro, size = 10000, prob = exp(pred_df$est))
-
-  sampled_temp_year <- dplyr::group_by(pred_df, year) %>%
-    do(sample_n(., size = 10000, replace = T, weight = exp(est)))
-  sampled_temp_year$min <- min(sampled_temp)
-  sampled_temp_year$max <- max(sampled_temp)
-  sampled_temp_year$lo95 <- quantile(sampled_temp, 0.025)
-  sampled_temp_year$hi95 <- quantile(sampled_temp, 0.975)
-  sampled_temp_year$species <- df$species[i]
-  sampled_temp_year$depth_effect <- df$depth_effect[i]
-
-  # do empirical sampling
-  empirical_temp_year <- dplyr::filter(fit$data, !is.na(cpue_kg_km2)) %>%
-    dplyr::group_by(year) %>%
-    do(sample_n(., size = 10000, replace = T, weight = cpue_kg_km2))
-  empirical_temp_year$species <- df$species[i]
-  empirical_temp_year$depth_effect <- df$depth_effect[i]
-
+  # the GOA sampling is a little trickier than the other regions, because
+  # we need to generate samples of the same area -- and cells are more 
+  # unequally sized
+  years <- unique(pred_df$year)
+    for(ii in 1:length(years)) {
+      # generate samples from this year that are equal in size to total area
+      sub <- dplyr::filter(pred_df, year == years[ii])
+      sampled_idx <- sample(1:nrow(sub), size = 1.2*length(unique(pred_df$lat_lon)), replace=T, prob = exp(sub$est))
+      sampled_df <- sub[sampled_idx,]
+      cutoff <- which(cumsum(sampled_df$Area_km2) > totarea)[1]
+      sampled_df <- sampled_df[1:cutoff,]
+      # summarize
+      summarized_df <- dplyr::group_by(sampled_df, year) %>% 
+        dplyr::summarise(min_enviro = min(enviro),
+                         max_enviro = max(enviro),
+                         mean_enviro = mean(enviro),
+                         lo10_enviro = quantile(enviro,0.05),
+                         lo20_enviro = quantile(enviro,0.1),
+                         lo30_enviro = quantile(enviro,0.15),
+                         lo40_enviro = quantile(enviro,0.2),
+                         lo50_enviro = quantile(enviro,0.25),
+                         hi10_enviro = quantile(enviro,0.95),
+                         hi20_enviro = quantile(enviro,0.9),
+                         hi30_enviro = quantile(enviro,0.85),
+                         hi40_enviro = quantile(enviro,0.8),
+                         hi50_enviro = quantile(enviro,0.75),
+                         min_depth = min(logdepth),
+                         max_depth = max(logdepth),
+                         mean_depth = mean(logdepth),
+                         lo_depth = quantile(logdepth,0.025),
+                         hi_depth = quantile(logdepth,0.975))
+      summarized_df$sci_name <- fit$data$scientific_name[1]
+      summarized_df$species <- fit$data$species[1]
+      summarized_df$depth <- df$depth_effect[i]
+      if(ii == 1) {
+        sampled_temp_year <- summarized_df
+      } else {
+        sampled_temp_year <- rbind(sampled_temp_year, summarized_df)
+      }
+    }
+  
   if (i == 1) {
     all_temp <- sampled_temp_year
-    all_empirical <- empirical_temp_year
   } else {
     all_temp <- rbind(all_temp, sampled_temp_year)
-    all_empirical <- rbind(all_empirical, empirical_temp_year)
   }
-  # get empirical range of sampled temps
-  # empirical_temp <- dplyr::group_by(fit$data, year) %>%
-  #   dplyr::summarize(lo=quantile(enviro,0.025),
-  #                    hi=quantile(enviro,0.975))
-
-  # dplyr::group_by(sampled_temp_year,year) %>%
-  #   dplyr::summarize(mean = mean(enviro),
-  #                    lo=quantile(enviro,0.025),
-  #                    hi=quantile(enviro,0.975)) %>%
-  #   ggplot(aes(year,mean)) + geom_line() +
-  #   geom_ribbon(aes(ymin=lo,ymax=hi)) +
-  #   geom_line() +
-  #   xlab("Year") +
-  #   ylab("Temperature")
+  
   }
 }
 
 saveRDS(all_temp, "output/temp_niche_goa.rds")
-saveRDS(all_empirical, "output/empirical_temp_niche_goa.rds")
