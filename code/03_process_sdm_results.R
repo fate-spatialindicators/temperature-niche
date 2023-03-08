@@ -2,8 +2,11 @@ library(ggplot2)
 library(dplyr)
 library(sdmTMB)
 
-region <- c("goa", "wc", "bc")[2]
+region <- c("goa", "wc", "bc")[3]
 df <- readRDS(paste0("output/", region, "/models.RDS"))
+pred_all <- NULL
+presence_only = TRUE
+presence_str = ifelse(presence_only, "_presence","")
 
 df$lo <- NA
 df$lo_se <- NA
@@ -16,6 +19,10 @@ df$peak_se <- NA
 df$reduction <- NA
 df$reduction_se <- NA
 df$converged <- 0
+df$b_env <- NA
+df$b_env_se <- NA
+df$b_env2 <- NA
+df$b_env2_se <- NA
 
 # Create a data frame just to project the effect of temperature on
 m <- readRDS(paste0("output/", region, "/model_", 1, ".rds"))
@@ -31,7 +38,7 @@ newdf$year <- sort(rep(unique_years, 61))
 
 for (i in 1:nrow(df)) {
   print(i)
-  fname <- paste0("output/", region, "/model_", i, ".rds")
+  fname <- paste0("output/", region, "/model_", i,presence_str, ".rds")
   if (file.exists(fname)) {
     m <- readRDS(fname)
     sd_report <- summary(m$sd_report)
@@ -47,7 +54,7 @@ for (i in 1:nrow(df)) {
     df$peak_se[i] <- params["quadratic_peak", "Std. Error"]
     df$reduction[i] <- params["quadratic_reduction", "Estimate"]
     df$reduction_se[i] <- params["quadratic_reduction", "Std. Error"]
-
+    
     if (length(which(is.na(m$sd_report$sd))) == 0) df$converged[i] <- 1
 
     if (df$converged[i] == 1) {
@@ -70,6 +77,13 @@ for (i in 1:nrow(df)) {
       pred$quadratic <- df$quadratic[i]
       pred$model <- i
       temp_effect <- pred$est_non_rf
+      
+      if("surface_temperature" %in% names(pred)) pred <- dplyr::select(pred, -surface_temperature)
+      if("date" %in% names(pred)) pred <- dplyr::select(pred, -date)
+      if("day" %in% names(pred)) pred <- dplyr::select(pred, -day)
+      if("month" %in% names(pred)) pred <- dplyr::select(pred, -month)
+      if("species_code" %in% names(pred)) pred <- dplyr::select(pred, -species_code)
+      
       if (i == 1) {
         pred_all <- pred
       } else {
@@ -79,151 +93,6 @@ for (i in 1:nrow(df)) {
   }
 }
 
-write.csv(pred_all, file = paste0("output/", region, "_output_covar_effects.csv"))
+write.csv(pred_all, file = paste0("output/", region,presence_str, "_output_covar_effects.csv"))
 # save results
-write.csv(df, file = paste0("output/", region, "_output.csv"))
-# saveRDS(df,file=paste0("output/",region,"_output.rds"))
-# 
-# df <- read.csv(
-#   file = paste0("output/", region, "_output.csv"),
-#   stringsAsFactors = FALSE
-# )
-# 
-# pred_all <- read.csv(paste0("output/", region, "_output_covar_effects.csv"))
-# ggplot(pred_all, aes(enviro, est_non_rf, col = quadratic, group = quadratic)) +
-#   geom_line() +
-#   facet_wrap(~species, scale = "free_y") +
-#   theme_bw() +
-#   xlab("Standardized temperature") +
-#   ylab("Estimated effect") +
-#   theme(strip.background = element_rect(fill = "white"))
-# 
-# pdf(paste0("plots/", region, "-temp_range.pdf"))
-# level_order <- dplyr::filter(
-#   df, !is.na(range), covariate == "temp",
-#   depth_effect == TRUE, range_se < 5
-# ) %>%
-#   dplyr::arrange(range) %>%
-#   select(species)
-# dplyr::filter(
-#   df, !is.na(range), covariate == "temp",
-#   range_se < 5, depth_effect == TRUE
-# ) %>%
-#   ggplot(aes(factor(species, level = level_order$species), range)) +
-#   geom_pointrange(aes(
-#     ymin = range - 2 * range_se,
-#     ymax = range + 2 * range_se
-#   )) +
-#   coord_flip() +
-#   xlab("Species") +
-#   ylab("Range") +
-#   ggtitle(paste0("Temperature range - ", region, " survey"))
-# dev.off()
-# 
-# pdf(paste0("plots/", region, "-temp_range2.pdf"))
-# level_order <- dplyr::filter(
-#   df, !is.na(range), covariate == "temp",
-#   depth_effect == TRUE, range_se < 1
-# ) %>%
-#   dplyr::arrange(range) %>%
-#   select(species)
-# dplyr::filter(
-#   df, !is.na(range), covariate == "temp", range_se < 1,
-#   species %in% level_order$species
-# ) %>%
-#   ggplot(aes(factor(species, level = level_order$species), range, col = depth_effect)) +
-#   geom_pointrange(aes(
-#     ymin = range - 2 * range_se,
-#     ymax = range + 2 * range_se
-#   )) +
-#   coord_flip() +
-#   xlab("Species") +
-#   ylab("Range") +
-#   ggtitle(paste0("Temperature range - ", region, " survey"))
-# dev.off()
-# 
-# pdf(paste0("plots/", region, "-temp_low.pdf"))
-# level_order <- dplyr::filter(
-#   df, !is.na(lo), covariate == "temp",
-#   depth_effect == TRUE, lo_se < 5
-# ) %>%
-#   dplyr::arrange(lo) %>%
-#   select(species)
-# dplyr::filter(df, !is.na(lo), covariate == "temp", depth_effect == TRUE, lo_se < 5) %>%
-#   ggplot(aes(factor(species, level = level_order$species), lo)) +
-#   geom_pointrange(aes(
-#     ymin = lo - 2 * lo_se,
-#     ymax = lo + 2 * lo_se
-#   ), col = "darkblue") +
-#   coord_flip() +
-#   xlab("Species") +
-#   ylab("Range") +
-#   ggtitle(paste0("Temperature low bound - ", region, " survey"))
-# dev.off()
-# 
-# pdf(paste0("plots/", region, "-temp_hi.pdf"))
-# level_order <- dplyr::filter(
-#   df, !is.na(hi), covariate == "temp",
-#   depth_effect == TRUE, hi_se < 5
-# ) %>%
-#   dplyr::arrange(hi) %>%
-#   select(species)
-# dplyr::filter(df, !is.na(hi), covariate == "temp", depth_effect == TRUE, hi_se < 5) %>%
-#   ggplot(aes(factor(species, level = level_order$species), hi)) +
-#   geom_pointrange(aes(
-#     ymin = hi - 2 * hi_se,
-#     ymax = hi + 2 * hi_se
-#   ), col = "darkblue") +
-#   coord_flip() +
-#   xlab("Species") +
-#   ylab("Range") +
-#   ggtitle(paste0("Temperature upper bound - ", region, " survey"))
-# dev.off()
-# 
-# pdf(paste0("plots/", region, "-temp_reduction.pdf"))
-# level_order <- dplyr::filter(
-#   df, !is.na(reduction), covariate == "temp",
-#   depth_effect == TRUE, reduction_se < 5
-# ) %>%
-#   dplyr::arrange(reduction) %>%
-#   select(species)
-# dplyr::filter(df, !is.na(reduction), covariate == "temp", depth_effect == TRUE, reduction_se < 5) %>%
-#   ggplot(aes(factor(species, level = level_order$species), reduction)) +
-#   geom_pointrange(aes(
-#     ymin = reduction - 2 * reduction_se,
-#     ymax = reduction + 2 * reduction_se
-#   ), col = "darkblue") +
-#   coord_flip() +
-#   xlab("Species") +
-#   ylab("Range") +
-#   ggtitle(paste0("Reduction from peak - ", region, " survey"))
-# dev.off()
-# 
-# pdf(paste0("plots/", region, "-temp_reduction2.pdf"))
-# level_order <- dplyr::filter(
-#   df, !is.na(reduction), covariate == "temp",
-#   depth_effect == TRUE, reduction_se < 5
-# ) %>%
-#   dplyr::arrange(reduction) %>%
-#   select(species)
-# dplyr::filter(
-#   df, !is.na(reduction), covariate == "temp", reduction_se < 5,
-#   species %in% level_order$species
-# ) %>%
-#   ggplot(aes(factor(species, level = level_order$species), reduction, col = depth_effect)) +
-#   geom_pointrange(aes(
-#     ymin = reduction - 2 * reduction_se,
-#     ymax = reduction + 2 * reduction_se
-#   )) +
-#   coord_flip() +
-#   xlab("Species") +
-#   ylab("Reduction") +
-#   ggtitle(paste0("Temperature range - ", region, " survey"))
-# dev.off()
-# 
-# 
-# 
-# pdf(paste0("plots/", region, "-temp_m.pdf"))
-# 
-# 
-# dev.off()
+write.csv(df, file = paste0("output/", region,presence_str, "_output.csv"))

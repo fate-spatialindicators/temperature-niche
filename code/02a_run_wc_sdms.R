@@ -43,7 +43,8 @@ presence_str = ifelse(presence_only, "_presence","")
 
 for (i in 1:nrow(df)) {
   sub <- dplyr::filter(dat, species == df$species[i])
-
+   
+  sub$cpue_kg_km2 <- sub$cpue_kg_per_ha_der * 100 # this is because cpue conversion is wrong in existing nwfscSurvey (in process of being fixed)
   # rescale variables
   sub$depth <- as.numeric(scale(log(sub$depth)))
   # mean depth: 5.614747, sd = 0.896874

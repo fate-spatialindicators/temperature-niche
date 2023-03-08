@@ -8,17 +8,17 @@ all_temp = readRDS(paste0("output/temp_niche_combined.rds"))
 summaries <- as.data.frame(all_temp) %>%
   dplyr::group_by(year, species) %>%
   dplyr::summarize(
-    mean_est = mean(enviro),
-    lo10 = quantile(enviro, 0.05),
-    hi10 = quantile(enviro, 0.95),
-    lo20 = quantile(enviro, 0.1),
-    hi20 = quantile(enviro, 0.9),
-    lo30 = quantile(enviro, 0.15),
-    hi30 = quantile(enviro, 0.85),
-    lo40 = quantile(enviro, 0.2),
-    hi40 = quantile(enviro, 0.8),
-    lo50 = quantile(enviro, 0.25),
-    hi50 = quantile(enviro, 0.75)
+    mean_est = mean(mean_enviro),
+    lo10 = quantile(lo10_enviro, 0.05),
+    hi10 = quantile(hi10_enviro, 0.95),
+    lo20 = quantile(lo20_enviro, 0.1),
+    hi20 = quantile(hi20_enviro, 0.9),
+    lo30 = quantile(lo30_enviro, 0.15),
+    hi30 = quantile(hi30_enviro, 0.85),
+    lo40 = quantile(lo40_enviro, 0.2),
+    hi40 = quantile(hi40_enviro, 0.8),
+    lo50 = quantile(lo50_enviro, 0.25),
+    hi50 = quantile(hi50_enviro, 0.75)
   ) %>%
   as.data.frame()
 summaries$mean_est[which(summaries$mean_est > 14)] <- NA
@@ -32,12 +32,13 @@ summaries$species = paste0(toupper(substr(summaries$species,1,1)),
 # also add in the mean temp index
 wc_index = readRDS("output/temp_index_wc.rds")
 goa_index = readRDS("output/temp_index_goa.rds")
-temp_indx = rbind(wc_index, goa_index)
+bc_index = readRDS("output/temp_index_bc.rds")
+temp_indx = rbind(wc_index, goa_index, bc_index)
 temp_index = dplyr::group_by(temp_indx, year) %>%
   dplyr::summarise(m = mean(est)) %>%
-  dplyr::filter(!is.na(m), year>=2003, year %in% seq(2003,2021,2))
+  dplyr::filter(!is.na(m), year>=2003, year %in% goa_index$year)
 
-g1 <- ggplot(summaries, aes(year, mean_est)) +
+g1 <- ggplot(dplyr::filter(summaries, year>=2003), aes(year, mean_est)) +
   facet_wrap(~species, scale = "free") +
   geom_ribbon(aes(ymin = lo10, ymax = hi10), alpha = 0.7, fill = brewer.blues(6)[1]) +
   geom_ribbon(aes(ymin = lo20, ymax = hi20), alpha = 0.7, fill = brewer.blues(6)[2]) +
@@ -45,7 +46,7 @@ g1 <- ggplot(summaries, aes(year, mean_est)) +
   geom_ribbon(aes(ymin = lo40, ymax = hi40), alpha = 0.7, fill = brewer.blues(6)[4]) +
   geom_ribbon(aes(ymin = lo50, ymax = hi50), alpha = 0.7, fill = brewer.blues(6)[5]) +
   geom_line(col = brewer.blues(6)[6], alpha = 0.5) +
-  geom_line(data=temp_index, aes(year,m),col="red") + 
+  geom_line(data=temp_index, aes(year,m),col="red", alpha = 0.5) + 
   theme_bw() +
   # geom_hline(aes(yintercept=enviro_min),col="grey30",linetype="dashed") +
   # geom_hline(aes(yintercept=enviro_hi),col="grey30",linetype="dashed") +

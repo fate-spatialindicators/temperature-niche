@@ -139,7 +139,9 @@ for (i in 1:nrow(species_table)) {
     years <- goa_area$year
   }
   
+  #years = unique()
   # Loop over years -- no clean way to do this with dplyr
+  years <- sort(unique(combined$year))
   for(ii in 1:length(years)) {
     # generate samples from this year that are equal in size to total area
     sub <- dplyr::filter(combined, year == years[ii])

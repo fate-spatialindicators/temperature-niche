@@ -53,7 +53,7 @@ species_table = dplyr::mutate(species_table,
                               n_regions = GOA + BC + WC) %>%
   dplyr::filter(n_regions > 1)
  
-for (i in 1:nrow(species_table)) {
+for (i in 7:nrow(species_table)) {
   
   this_species = species_table$species[i]
   sub <- dplyr::filter(dat, species == this_species, !is.na(depth),
@@ -76,7 +76,7 @@ for (i in 1:nrow(species_table)) {
   )
   fit = list()
   fit[[1]] <- try(sdmTMB(
-    cpue_kg_km2 ~ -1 + enviro + enviro2 + region + as.factor(year) + s(depth),
+    cpue_kg_km2 ~ -1 + enviro + enviro2 + region + as.factor(year) + s(logdepth,k=3),
     #cpue_kg_km2 ~ -1 + enviro + enviro2 + region + as.factor(year),
     mesh = spde,
     time = "year",
@@ -90,7 +90,7 @@ for (i in 1:nrow(species_table)) {
   
   # Add region:enviornment interaction
   fit[[2]] <- try(sdmTMB(
-    cpue_kg_km2 ~ -1 + enviro + enviro2 + enviro*region + enviro2*region + as.factor(year) + s(depth),
+    cpue_kg_km2 ~ -1 + enviro + enviro2 + enviro*region + enviro2*region + as.factor(year) + s(logdepth,k=3),
     mesh = spde,
     time = "year",
     family = tweedie(link = "log"),
@@ -103,7 +103,7 @@ for (i in 1:nrow(species_table)) {
   
   # Constant temp, depth region interaction
   fit[[3]] <- try(sdmTMB(
-    cpue_kg_km2 ~ -1 + enviro + enviro2 + as.factor(year) + s(depth, by = as.factor(region)),
+    cpue_kg_km2 ~ -1 + enviro + enviro2 + as.factor(year) + s(logdepth, k=3, by = as.factor(region)),
     mesh = spde,
     time = "year",
     family = tweedie(link = "log"),
@@ -114,6 +114,27 @@ for (i in 1:nrow(species_table)) {
     control = sdmTMBcontrol(quadratic_roots = TRUE)
   ), silent = TRUE)
   saveRDS(fit, file = paste0("output/all/", this_species, ".rds"))
+  
+  pred_df <- expand.grid(year = unique(sub$year),
+                         region = unique(sub$region),
+                         enviro = seq(-3,3,by=0.1),
+                         enviro2 = 0,
+                         logdepth = 0,
+                         X = mean(sub$Y),
+                         Y = mean(sub$X))
+  pred_df$enviro2 <- pred_df$enviro ^ 2
+  
+  pred = list()
+  pred[[1]] <- predict(fit[[1]], pred_df)
+  pred[[2]] <- predict(fit[[2]], pred_df)
+  pred[[3]] <- predict(fit[[3]], pred_df)
+  saveRDS(pred, file = paste0("output/all/", this_species, "_pred.rds"))
+  
 }
 
-
+best_model = 0
+for (i in 7:nrow(species_table)) {
+  this_species = species_table$species[i]
+  fit = readRDS(paste0("output/all/", this_species, ".rds"))
+  best_model[i] = which.min(lapply(fit, AIC))
+}

@@ -23,7 +23,7 @@ catch <- readRDS("survey_data/wcbts_catch_2022-08-01.rds")
 names(catch) <- tolower(names(catch))
 catch$date <- as.character(catch$date)
 catch$trawl_id <- as.numeric(catch$trawl_id)
-catch$scientific_name <- tolower(catch$scientific_name)
+#catch$scientific_name <- tolower(catch$scientific_name)
 catch <- dplyr::left_join(catch, spec_names)
 catch$common_name <- tolower(catch$common_name)
 
@@ -34,6 +34,7 @@ haul <- readRDS("survey_data/wcbts_haul_2022-08-01.rds")
 haul$year <- as.numeric(substr(haul$date_yyyymmdd, 1, 4))
 haul$month <- as.numeric(substr(haul$date_yyyymmdd, 5, 6))
 haul$day <- as.numeric(substr(haul$date_yyyymmdd, 7, 8))
+haul$yday <- lubridate::parse_date_time(haul$date_yyyymmdd, orders="ymd")
 
 haul <- dplyr::rename(haul,
   o2 = o2_at_gear_ml_per_l_der,
@@ -42,46 +43,46 @@ haul <- dplyr::rename(haul,
 ) %>%
   dplyr::select(
     o2, degc, depthm, latitude_dd, longitude_dd,
-    performance, trawl_id
+    performance, trawl_id, yday
   )
 
 dat <- dplyr::left_join(catch, haul)
 
-# WC names in cope and haltuch 2012
-cope_haltuch <- c(
-  "aurora rockfish", "big skate", "bigfin eelpout",
-  "black eelpout", "brown cat shark", "california slickhead",
-  "canary rockfish", "chilipepper", "darkblotched rockfish",
-  "deepsea sole", "dover sole", "english sole", "giant grenadier",
-  "greenstriped rockfish", "halfbanded rockfish", "lingcod",
-  "longnose skate", "longspine thornyhead", "butterfish unident.",
-  "pacific flatnose", "pacific grenadier", "pacific hake",
-  "pacific sanddab", "petrale sole", "pink seaperch",
-  "rex sole", "sablefish", "sandpaper skate", "sharpchin rockfish",
-  "shortbelly rockfish", "shortspine thornyhead", "slender sole",
-  "pacific spiny dogfish", "splitnose rockfish", "spotted ratfish",
-  "stripetail rockfish", "white croaker", "yellowtail rockfish"
-)
-
-# these are additional species on the prioritization spreadsheet
-fram <- c(
-  cope_haltuch, "vermilion and sunset rockfish",
-  "black rockfish", "cowcod", "copper rockfish",
-  "brown rockfish", "quillback rockfish",
-  "redbanded rockfish", "tree rockfish",
-  "squarespot rockfish", "starry rockfish",
-  "speckled rockfish", "rougheye and blackspotted rockfish",
-  "shortraker rockfish", "flathead sole",
-  "widow rockfish", "kelp greenling",
-  "olive rockfish", "blue rockfish",
-  "kelp rockfish", "cabezon",
-  "sand sole", "flag rockfish",
-  "starry flounder", "rock sole unident.",
-  "greenspotted rockfish",
-  "honeycomb rockfish",
-  "California scorpionfish",
-  "blackgill rockfish"
-)
+# # WC names in cope and haltuch 2012
+# cope_haltuch <- c(
+#   "aurora rockfish", "big skate", "bigfin eelpout",
+#   "black eelpout", "brown cat shark", "california slickhead",
+#   "canary rockfish", "chilipepper", "darkblotched rockfish",
+#   "deepsea sole", "dover sole", "english sole", "giant grenadier",
+#   "greenstriped rockfish", "halfbanded rockfish", "lingcod",
+#   "longnose skate", "longspine thornyhead", "butterfish unident.",
+#   "pacific flatnose", "pacific grenadier", "pacific hake",
+#   "pacific sanddab", "petrale sole", "pink seaperch",
+#   "rex sole", "sablefish", "sandpaper skate", "sharpchin rockfish",
+#   "shortbelly rockfish", "shortspine thornyhead", "slender sole",
+#   "pacific spiny dogfish", "splitnose rockfish", "spotted ratfish",
+#   "stripetail rockfish", "white croaker", "yellowtail rockfish"
+# )
+# 
+# # these are additional species on the prioritization spreadsheet
+# fram <- c(
+#   cope_haltuch, "vermilion and sunset rockfish",
+#   "black rockfish", "cowcod", "copper rockfish",
+#   "brown rockfish", "quillback rockfish",
+#   "redbanded rockfish", "tree rockfish",
+#   "squarespot rockfish", "starry rockfish",
+#   "speckled rockfish", "rougheye and blackspotted rockfish",
+#   "shortraker rockfish", "flathead sole",
+#   "widow rockfish", "kelp greenling",
+#   "olive rockfish", "blue rockfish",
+#   "kelp rockfish", "cabezon",
+#   "sand sole", "flag rockfish",
+#   "starry flounder", "rock sole unident.",
+#   "greenspotted rockfish",
+#   "honeycomb rockfish",
+#   "California scorpionfish",
+#   "blackgill rockfish"
+# )
 # filter by 'well sampled wc species'
 # dat = dplyr::filter(dat, common_name %in% cope_haltuch)
 

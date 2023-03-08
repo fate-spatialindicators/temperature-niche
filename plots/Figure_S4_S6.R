@@ -2,12 +2,14 @@ library(ggplot2)
 library(dplyr)
 library(pals)
 
-region = "wc"
+region = "WC"
 summaries = readRDS(paste0("output/temp_niche_",region,".rds"))
 summaries <- dplyr::filter(summaries, depth==TRUE) # only include models that est depth
 summaries$species = as.character(summaries$species)
 summaries$species = paste0(toupper(substr(summaries$species,1,1)), 
                         substr(summaries$species,2,nchar(summaries$species)))
+
+temp_index = readRDS(paste0("output/temp_index_",region,".rds"))
 
 g1 <- ggplot(summaries, aes(year, mean_enviro)) +
   facet_wrap(~species, scale = "free") +
@@ -18,6 +20,7 @@ g1 <- ggplot(summaries, aes(year, mean_enviro)) +
   geom_ribbon(aes(ymin = lo50_enviro, ymax = hi50_enviro), alpha = 0.7, fill = brewer.blues(6)[5]) +
   geom_line(col = brewer.blues(6)[6], alpha = 0.5) +
   theme_bw() +
+  geom_line(data = temp_index, aes(year, est), col="red",alpha=0.5) + 
   # geom_hline(aes(yintercept=enviro_min),col="grey30",linetype="dashed") +
   # geom_hline(aes(yintercept=enviro_hi),col="grey30",linetype="dashed") +
   ylab(expression(paste("Temperature ", degree, "C"))) +
@@ -44,3 +47,22 @@ g1 <- ggplot(summaries, aes(year, hi10_enviro - lo10_enviro)) +
 ggsave(plot = g1, filename=paste0("plots/Figure_S6",region,".png"), width=8,height=8)
 
 
+
+
+combo <- dplyr::left_join(summaries, temp_index)
+combo$se_enviro <- as.numeric((combo$hi10_enviro - combo$lo10_enviro) / 3.29)
+  
+fit <- lm((mean_enviro - est) ~ year * species, weights = 1/(se_enviro^2), data = combo)
+summary(fit)
+
+
+fit <- lm((hi10_enviro - lo10_enviro) ~ year * species, weights = 1/(se_enviro^2), data = combo)
+summary(fit)
+
+fit <- lm((hi10_enviro - lo10_enviro) ~ est * species, weights = 1/(se_enviro^2), data = combo)
+summary(fit)
+
+library(glmmTMB)
+fit <- glmmTMB((mean_enviro - est) ~ species * year, data = combo)
+summary(fit)
+  
