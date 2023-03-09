@@ -76,6 +76,7 @@ for (i in 1:nrow(species_table)) {
   sub$enviro <- sub$temp
   sub$enviro2 <- sub$enviro * sub$enviro
   sub$logdepth <- scale(log(sub$depth))
+  sub$logdepth2 <- sub$logdepth * sub$logdepth
   sub <- dplyr::filter(sub, !is.na(enviro), !is.na(depth))
   spde <- try(make_mesh(sub, c("X", "Y"),
                         cutoff = 20
@@ -93,7 +94,7 @@ for (i in 1:nrow(species_table)) {
   fit = list()
   
   # Model 1
-  formula = "cpue_kg_km2 ~ -1 + s(logdepth,k=3)"
+  formula = "cpue_kg_km2 ~ -1 + logdepth + logdepth2"
   if(length(unique(sub$region)) > 1) formula <- paste(formula, "+ region")
 
   fit[[1]] <- try(sdmTMB(
@@ -110,7 +111,7 @@ for (i in 1:nrow(species_table)) {
   ), silent = TRUE)
   
   # Model 2
-  new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + s(logdepth,k=3)"
+  new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + logdepth + logdepth2"
   if(length(unique(sub$region)) > 1) new_formula <- paste(formula, "+ region")
   
   fit[[2]] <- try(update(fit[[1]], formula = as.formula(new_formula)), silent = TRUE)
@@ -118,12 +119,12 @@ for (i in 1:nrow(species_table)) {
   if(length(unique(sub$region)) > 1) {
     # Model 3:Add region:enviornment interaction
     # only run this for > 1 region, otherwise it's identical to model 1
-    new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + enviro*region + enviro2*region + s(logdepth,k=3)"
+    new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + enviro*region + enviro2*region + logdepth + logdepth2"
     fit[[3]] <- try(update(fit[[1]], formula = as.formula(new_formula)), silent = TRUE)
     
     # Model 4:Constant temp, depth region interaction
     # only run this for > 1 region, otherwise it's identical to model 1
-    new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + as.factor(year) + s(logdepth, k=3, by = as.factor(region))"
+    new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + region*logdepth + region*logdepth2"
     fit[[4]] <- try(update(fit[[1]], formula = as.formula(new_formula)), silent = TRUE)
   }
   # save list of fitted models
