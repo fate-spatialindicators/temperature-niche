@@ -56,16 +56,27 @@ species_table <- read.csv("species_table.csv")
 #  
 
 for (i in 1:nrow(species_table)) {
-  
+  for (i in 1:1) { 
   this_species = species_table$species[i]
   sub <- dplyr::filter(dat, species == this_species, !is.na(depth))
+  sub <- add_utm_columns(sub, ll_names = c("longitude_dd", "latitude_dd"))
   
-  #sub <- sub[seq(1,27000,by=100),]
-  sub <- add_utm_columns(sub, ll_names = c("longitude_dd","latitude_dd"))
+  #sub <- add_utm_columns(sub, ll_names = c("longitude_dd","latitude_dd"))
+  #sub_ll <- sub
+  #coordinates(sub_ll) <- c("longitude_dd", "latitude_dd")
+  #proj4string(sub_ll) <- CRS("+proj=longlat +datum=WGS84")
+  # convert to utm with spTransform
+  #sub_utm <- spTransform(
+  #  sub_ll,
+  #  CRS("+proj=utm +zone=10 +datum=WGS84 +units=km")
+  #)
+  # convert back from sp object to data frame
+  #sub <- as.data.frame(sub_utm)
+  
   sub$enviro <- sub$temp
   sub$enviro2 <- sub$enviro * sub$enviro
   sub$logdepth <- scale(log(sub$depth))
-  
+  sub <- dplyr::filter(sub, !is.na(enviro), !is.na(depth))
   spde <- try(make_mesh(sub, c("X", "Y"),
                         cutoff = 20
   ), silent = TRUE)
@@ -76,13 +87,13 @@ for (i in 1:nrow(species_table)) {
       sigma_lt = 25, sigma_prob = 0.05
     )
   )
-  
+  # refactor to avoid identifiability errors
   sub$region <- as.factor(as.character(sub$region))
 
   fit = list()
   
   # Model 1
-  formula = "cpue_kg_km2 ~ -1 + as.factor(year) + s(logdepth,k=3)"
+  formula = "cpue_kg_km2 ~ -1 + s(logdepth,k=3)"
   if(length(unique(sub$region)) > 1) formula <- paste(formula, "+ region")
 
   fit[[1]] <- try(sdmTMB(
@@ -94,11 +105,12 @@ for (i in 1:nrow(species_table)) {
     priors = priors,
     spatial = "on",
     spatiotemporal = "ar1",
-    control = sdmTMBcontrol(quadratic_roots = FALSE)
+    control = sdmTMBcontrol(quadratic_roots = FALSE),
+    extra_time = c(1991, 1992, 1994, 1995, 1997, 1998, 2000, 2001, 2002, 2020)
   ), silent = TRUE)
   
   # Model 2
-  new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + as.factor(year) + s(logdepth,k=3)"
+  new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + s(logdepth,k=3)"
   if(length(unique(sub$region)) > 1) new_formula <- paste(formula, "+ region")
   
   fit[[2]] <- try(update(fit[[1]], formula = as.formula(new_formula)), silent = TRUE)
@@ -106,7 +118,7 @@ for (i in 1:nrow(species_table)) {
   if(length(unique(sub$region)) > 1) {
     # Model 3:Add region:enviornment interaction
     # only run this for > 1 region, otherwise it's identical to model 1
-    new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + enviro*region + enviro2*region + as.factor(year) + s(logdepth,k=3)"
+    new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + enviro*region + enviro2*region + s(logdepth,k=3)"
     fit[[3]] <- try(update(fit[[1]], formula = as.formula(new_formula)), silent = TRUE)
     
     # Model 4:Constant temp, depth region interaction
