@@ -65,24 +65,24 @@ dat <- dplyr::left_join(catch, haul)
 # )
 # 
 # # these are additional species on the prioritization spreadsheet
-# fram <- c(
-#   cope_haltuch, "vermilion and sunset rockfish",
-#   "black rockfish", "cowcod", "copper rockfish",
-#   "brown rockfish", "quillback rockfish",
-#   "redbanded rockfish", "tree rockfish",
-#   "squarespot rockfish", "starry rockfish",
-#   "speckled rockfish", "rougheye and blackspotted rockfish",
-#   "shortraker rockfish", "flathead sole",
-#   "widow rockfish", "kelp greenling",
-#   "olive rockfish", "blue rockfish",
-#   "kelp rockfish", "cabezon",
-#   "sand sole", "flag rockfish",
-#   "starry flounder", "rock sole unident.",
-#   "greenspotted rockfish",
-#   "honeycomb rockfish",
-#   "California scorpionfish",
-#   "blackgill rockfish"
-# )
+fram <- c(
+  cope_haltuch, "vermilion and sunset rockfish",
+  "black rockfish", "cowcod", "copper rockfish",
+  "brown rockfish", "quillback rockfish",
+  "redbanded rockfish", "tree rockfish",
+  "squarespot rockfish", "starry rockfish",
+  "speckled rockfish", "rougheye and blackspotted rockfish",
+  "shortraker rockfish", "flathead sole",
+  "widow rockfish", "kelp greenling",
+  "olive rockfish", "blue rockfish",
+  "kelp rockfish", "cabezon",
+  "sand sole", "flag rockfish",
+  "starry flounder", "rock sole unident.",
+  "greenspotted rockfish",
+  "honeycomb rockfish",
+  "California scorpionfish",
+  "blackgill rockfish"
+)
 # filter by 'well sampled wc species'
 # dat = dplyr::filter(dat, common_name %in% cope_haltuch)
 
