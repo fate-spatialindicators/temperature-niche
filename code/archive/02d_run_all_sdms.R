@@ -9,7 +9,6 @@ bc <- readRDS("survey_data/bc_data_2021.rds")
 bc <- dplyr::select(bc, -start_time, -count, -sensor_name) %>%
   dplyr::rename(temp = temperature)
 goa <- readRDS("survey_data/joined_goa_data.rds")
-
 cow$region <- "COW"
 bc$region <- "BC"
 goa$region <- "GOA"
@@ -47,88 +46,74 @@ df_goa$species[which(df_goa$species=="spiny dogfish")] = "north pacific spiny do
 
 # species table
 species_table <- read.csv("species_table.csv")
-# species_table = dplyr::mutate(species_table, 
-#                               GOA = ifelse(GOA=="x",1,0),
-#                               BC = ifelse(BC=="x",1,0),
-#                               WC = ifelse(WC=="x",1,0),
-#                               n_regions = GOA + BC + WC) %>%
-#   dplyr::filter(n_regions > 1)
-#  
-
+species_table = dplyr::mutate(species_table, 
+                              GOA = ifelse(GOA=="x",1,0),
+                              BC = ifelse(BC=="x",1,0),
+                              WC = ifelse(WC=="x",1,0),
+                              n_regions = GOA + BC + WC) %>%
+  dplyr::filter(n_regions > 1)
+ 
 for (i in 1:nrow(species_table)) {
-  this_species = species_table$species[i]
-  sub <- dplyr::filter(dat, species == this_species, !is.na(depth))
-  sub <- add_utm_columns(sub, ll_names = c("longitude_dd", "latitude_dd"))
   
+  this_species = species_table$species[i]
+  sub <- dplyr::filter(dat, species == this_species, !is.na(depth),
+                       year != 2020)
+  #sub <- sub[seq(1,27000,by=100),]
+  sub <- add_utm_columns(sub, ll_names = c("longitude_dd","latitude_dd"))
   sub$enviro <- sub$temp
   sub$enviro2 <- sub$enviro * sub$enviro
   sub$logdepth <- scale(log(sub$depth))
-  sub$logdepth2 <- sub$logdepth * sub$logdepth
-  sub <- dplyr::filter(sub, !is.na(enviro), !is.na(depth))
-
-  bnd <- INLA::inla.nonconvex.hull(cbind(sub$X, sub$Y), 
-                                   convex = -0.05)
-  inla_mesh <- INLA::inla.mesh.2d(
-    boundary = bnd,
-    max.edge = c(150, 1000),
-    offset = -0.1, # default -0.1
-    cutoff = 50,
-    min.angle = 5 # default 21
-  )
-  spde <- make_mesh(sub, c("X", "Y"), mesh = inla_mesh)
   
+  spde <- try(make_mesh(sub, c("X", "Y"),
+                        cutoff = 20
+  ), silent = TRUE)
+
   priors <- sdmTMBpriors(
     matern_s = pc_matern(
       range_gt = 50, range_prob = 0.05,
       sigma_lt = 25, sigma_prob = 0.05
-    ),
-    ar1_rho = normal(0.7,0.1),
-    tweedie_p = normal(1.5,0.2)
+    )
   )
-  # refactor to avoid identifiability errors
-  sub$region <- as.factor(as.character(sub$region))
-
   fit = list()
-  
-  # Model 1
-  formula = "cpue_kg_km2 ~ -1 + logdepth + logdepth2"
-  if(length(unique(sub$region)) > 1) formula <- paste(formula, "+ region")
-
   fit[[1]] <- try(sdmTMB(
-    formula = as.formula(formula),
+    cpue_kg_km2 ~ -1 + enviro + enviro2 + region + as.factor(year) + s(depth),
+    #cpue_kg_km2 ~ -1 + enviro + enviro2 + region + as.factor(year),
     mesh = spde,
     time = "year",
     family = tweedie(link = "log"),
     data = sub,
     priors = priors,
     spatial = "on",
-    spatiotemporal = "ar1",
-    control = sdmTMBcontrol(quadratic_roots = FALSE, 
-                            normalize = TRUE,
-                            multiphase = TRUE),
-    extra_time = (1991:2021)[which(1991:2021 %in% unique(sub$year) == FALSE)]
+    spatiotemporal = "iid",
+    control = sdmTMBcontrol(quadratic_roots = TRUE)
   ), silent = TRUE)
   
-  # Model 2
-  new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + logdepth + logdepth2"
-  if(length(unique(sub$region)) > 1) new_formula <- paste(new_formula, "+ region")
+  # Add region:enviornment interaction
+  fit[[2]] <- try(sdmTMB(
+    cpue_kg_km2 ~ -1 + enviro + enviro2 + enviro*region + enviro2*region + as.factor(year) + s(depth),
+    mesh = spde,
+    time = "year",
+    family = tweedie(link = "log"),
+    data = sub,
+    priors = priors,
+    spatial = "on",
+    spatiotemporal = "iid",
+    control = sdmTMBcontrol(quadratic_roots = TRUE)
+  ), silent = TRUE)
   
-  fit[[2]] <- try(update(fit[[1]], formula = as.formula(new_formula)), silent = TRUE)
-  
-  if(length(unique(sub$region)) > 1) {
-    # Model 3:Add region:enviornment interaction
-    # only run this for > 1 region, otherwise it's identical to model 1
-    new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + enviro*region + enviro2*region + logdepth + logdepth2"
-    fit[[3]] <- try(update(fit[[1]], formula = as.formula(new_formula)), silent = TRUE)
-    
-    # Model 4:Constant temp, depth region interaction
-    # only run this for > 1 region, otherwise it's identical to model 1
-    new_formula <- "cpue_kg_km2 ~ -1 + enviro + enviro2 + region*logdepth + region*logdepth2"
-    fit[[4]] <- try(update(fit[[1]], formula = as.formula(new_formula)), silent = TRUE)
-  }
-  # save list of fitted models
+  # Constant temp, depth region interaction
+  fit[[3]] <- try(sdmTMB(
+    cpue_kg_km2 ~ -1 + enviro + enviro2 + as.factor(year) + s(depth, by = as.factor(region)),
+    mesh = spde,
+    time = "year",
+    family = tweedie(link = "log"),
+    data = sub,
+    priors = priors,
+    spatial = "on",
+    spatiotemporal = "iid",
+    control = sdmTMBcontrol(quadratic_roots = TRUE)
+  ), silent = TRUE)
   saveRDS(fit, file = paste0("output/all/", this_species, ".rds"))
-#toc()
 }
-  
-  
+
+
