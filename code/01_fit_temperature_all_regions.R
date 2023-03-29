@@ -109,6 +109,38 @@ pred_df$yday <- (182 - 189.6727) / 35.23058 # Day 182 = July 1
 pred_temp <- predict(fit, pred_df)
 saveRDS(pred_temp, "output/wc_pred_temp.rds")
 
+# Repeat for cells with depth < 250m
+sub <- dplyr::filter(pred_df, abs(depth)<250)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp, bias_correct = TRUE)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_wc_250.rds")
+
+sub <- dplyr::filter(pred_df, abs(depth)>250, abs(depth) < 500)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp, bias_correct = TRUE)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_wc_250_500.rds")
+
+sub <- dplyr::filter(pred_df, abs(depth)>500, abs(depth) < 750)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp, bias_correct = TRUE)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_wc_500_750.rds")
+
+
 # generate temp index for whole coast
 pred_temp <- predict(fit, pred_df, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
@@ -162,6 +194,37 @@ pred_df$yday <- (182 - 189.6727) / 35.23058 # Day 182 = July 1
 # make a prediction for what this will be
 pred_temp <- predict(fit, pred_df)
 saveRDS(pred_temp, "output/goa_pred_temp.rds")
+
+# Repeat for cells with depth < 250m
+sub <- dplyr::filter(pred_df, abs(depth)<250)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp, bias_correct = TRUE)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_goa_250.rds")
+
+sub <- dplyr::filter(pred_df, abs(depth)>250, abs(depth) < 500)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp, bias_correct = TRUE)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_goa_250_500.rds")
+
+sub <- dplyr::filter(pred_df, abs(depth)>500, abs(depth) < 750)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp, bias_correct = TRUE)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_goa_500_750.rds")
 
 # generate temp_index
 pred_temp <- predict(fit, pred_df, return_tmb_object = TRUE)
@@ -220,6 +283,37 @@ pred_df$yday <- (182 - 189.6727) / 35.23058 # Day 182 = July 1
 # make a prediction for what this will be
 pred_temp <- predict(fit, newdata = pred_df)
 saveRDS(pred_temp, "output/bc_pred_temp.rds")
+
+# Repeat for cells with depth < 250m
+sub <- dplyr::filter(pred_df, abs(depth)<250)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_bc_250.rds")
+
+sub <- dplyr::filter(pred_df, abs(depth)>250, abs(depth) < 500)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp, bias_correct = TRUE)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_bc_250_500.rds")
+
+sub <- dplyr::filter(pred_df, abs(depth)>500, abs(depth) < 750)
+pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
+index <- get_index(pred_temp, bias_correct = TRUE)
+n_cells <- length(unique(sub$lat_lon))
+index$est <- index$log_est / n_cells
+index$se <- index$se / n_cells
+index$lwr <- index$est - 1.96*index$se
+index$upr <- index$est + 1.96*index$se
+saveRDS(index, "output/temp_index_bc_500_750.rds")
 
 # generate temp index for whole coast
 pred_temp <- predict(fit, pred_df, return_tmb_object = TRUE)
