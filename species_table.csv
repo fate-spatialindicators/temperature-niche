@@ -1,56 +1,54 @@
-﻿species,GOA,BC,WC
-arrowtooth flounder,x,x,x
-aurora rockfish,,,x
-big skate,,,x
-bigfin eelpout,,,x
-black eelpout,,,x
-blackbelly eelpout,,x,x
-brown cat shark,,,x
-california slickhead,,,x
-canary rockfish,,x,
-chilipepper,,,x
-darkblotched rockfish,,,x
-deepsea sole,,,
-dover sole,x,x,x
-dungeness crab,,,x
-english sole,,x,x
-flathead sole,x,x,
-giant grenadier,,,x
-greenstriped rockfish,,x,x
-grooved tanner crab,,,x
-lanternfish unident.,,,x
-lingcod,,x,x
-longnose skate,x,x,x
-longspine thornyhead,,,x
-north pacific spiny dogfish,x,x,x
-northern rock sole,x,,
-northern rockfish,x,,
-pacific cod,x,x,
-pacific grenadier,,,x
-pacific hake,,x,
-pacific halibut,x,x,
-pacific ocean perch,x,x,
-pacific sanddab,,x,x
-petrale sole,,x,x
-redbanded rockfish,x,x,
-redstripe rockfish,,x,
-rex sole,x,x,x
-rosethorn rockfish,,x,
-rougheye/blackspotted rockfish complex,,x,
-sablefish,,x,x
-sandpaper skate,,,x
-sharpchin rockfish,,x,
-shortspine thornyhead,,x,x
-silvergray rockfish,,x,
-slender sole,,x,x
-snakehead eelpout,,,x
-southern rock sole,x,x,
-spinyhead sculpin,x,,
-splitnose rockfish,,,x
-spotted ratfish,,x,x
-stripetail rockfish,,,x
-twoline eelpout,,,x
-walleye pollock,x,x,
-yellow Irish lord,,,
-yellowmouth rockfish,,,
-yellowtail rockfish,,,
+"species","GOA","BC","WC","n_region"
+"arrowtooth flounder","x","x","x",3
+"aurora rockfish","","","x",1
+"big skate","x","","x",2
+"bigfin eelpout","","","x",1
+"black eelpout","","","x",1
+"blackbelly eelpout","","x","x",2
+"brown cat shark","","","x",1
+"california slickhead","","","x",1
+"canary rockfish","x","x","x",3
+"chilipepper","","","x",1
+"darkblotched rockfish","x","x","x",3
+"deepsea sole","x","","x",2
+"dover sole","x","x","x",3
+"dungeness crab","","","x",1
+"english sole","x","x","x",3
+"flathead sole","x","x","x",3
+"giant grenadier","x","","x",2
+"greenstriped rockfish","x","x","x",3
+"grooved tanner crab","","","x",1
+"lanternfish unident.","","","x",1
+"lingcod","x","x","x",3
+"longnose skate","x","x","x",3
+"longspine thornyhead","x","","x",2
+"north pacific spiny dogfish","x","x","x",3
+"northern rock sole","x","","",1
+"northern rockfish","x","","",1
+"pacific cod","x","x","",2
+"pacific grenadier","x","","x",2
+"pacific hake","x","x","x",3
+"pacific halibut","x","x","",2
+"pacific ocean perch","x","x","",2
+"pacific sanddab","x","x","x",3
+"petrale sole","x","x","x",3
+"redbanded rockfish","x","x","x",3
+"redstripe rockfish","x","x","",2
+"rex sole","x","x","x",3
+"rosethorn rockfish","x","x","",2
+"sablefish","x","x","x",3
+"sandpaper skate","","x","x",2
+"sharpchin rockfish","x","x","x",3
+"shortspine thornyhead","x","x","x",3
+"silvergray rockfish","x","x","",2
+"slender sole","x","x","x",3
+"snakehead eelpout","","","x",1
+"southern rock sole","x","x","",2
+"spinyhead sculpin","x","","",1
+"splitnose rockfish","x","x","x",3
+"spotted ratfish","x","x","x",3
+"stripetail rockfish","","","x",1
+"twoline eelpout","","","x",1
+"walleye pollock","x","x","",2
+"yellowmouth rockfish","x","x","",2
+"yellowtail rockfish","x","x","x",3

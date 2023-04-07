@@ -144,50 +144,6 @@ for (i in 1:nrow(species_table)) {
 }
   
 
-
-for (i in 1:nrow(species_table)) {
-  this_species = species_table$species[i]
-  sub <- dplyr::filter(dat, species == this_species, !is.na(depth))
-  sub <- add_utm_columns(sub, ll_names = c("longitude_dd", "latitude_dd"))
-  
-  sub$enviro <- sub$temp
-  sub$enviro2 <- sub$enviro * sub$enviro
-  sub$logdepth <- scale(log(sub$depth))
-  sub$logdepth2 <- sub$logdepth * sub$logdepth
-  sub <- dplyr::filter(sub, !is.na(enviro), !is.na(depth))
-  
-  bnd <- INLA::inla.nonconvex.hull(cbind(sub$X, sub$Y), 
-                                   convex = -0.05)
-  inla_mesh <- INLA::inla.mesh.2d(
-    boundary = bnd,
-    max.edge = c(150, 1000),
-    offset = -0.1, # default -0.1
-    cutoff = 50,
-    min.angle = 5 # default 21
-  )
-  spde <- make_mesh(sub, c("X", "Y"), mesh = inla_mesh)
-  
-  priors <- sdmTMBpriors(
-    matern_s = pc_matern(
-      range_gt = 50, range_prob = 0.05, #A value one expects the range is greater than with 1 - range_prob probability.
-      sigma_lt = 25, sigma_prob = 0.05 #A value one expects the marginal SD (sigma_O or sigma_E internally) is less than with 1 - sigma_prob probability.
-    ),
-    matern_st = pc_matern(
-      range_gt = 50, range_prob = 0.05,
-      sigma_lt = 25, sigma_prob = 0.05
-    ),
-    ar1_rho = normal(0.7,0.1),
-    tweedie_p = normal(1.5,0.2)
-  )
-  # refactor to avoid identifiability errors
-  sub$region <- as.factor(as.character(sub$region))
-  
-  fit = readRDS(file = paste0("output/all/", this_species, ".rds"))
-  
-  fit[[3]] <- try(update(fit[[1]], formula = as.formula(new_formula), share_range=TRUE), silent = TRUE)
-  saveRDS(fit, file = paste0("output/all/", this_species, ".rds"))
-}
-
 species_table$model_1 = NA
 species_table$model_2 = NA
 species_table$model_3 = NA

@@ -18,6 +18,7 @@ events <- read.csv("survey_data/synoptic-fishing-event-data.csv") %>%
 dat <- dplyr::left_join(dat, events)
 dat$yday <- yday(lubridate::parse_date_time(paste(dat$year,dat$month,dat$day), orders = "ymd"))
 dat <- dplyr::filter(dat, !is.na(yday))
+dat <- dplyr::filter(dat, species == "arrowtooth flounder")
 
 goa <- readRDS("survey_data/joined_goa_data.rds")
 goa <- dplyr::filter(goa, scientific_name == "Atheresthes stomias")
