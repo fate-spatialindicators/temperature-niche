@@ -117,4 +117,11 @@ g1 <- ggplot(coast_proj) + geom_sf(fill = "antiquewhite") +
 ggsave(g1, file="all_map.png")
 
 
-
+survey$Density = survey$temp - mean(survey$temp)
+g1 <- ggplot(coast_proj) + geom_sf(fill = "antiquewhite") + 
+  theme_bw() + 
+  labs(x = "Longitude", y = "Latitude") + 
+  geom_point(data = survey, aes(longitude*1000, latitude*1000, col=Density), alpha=1, 
+             size=0.5) + 
+  scale_color_gradient2()
+ggsave(g1, file="all_map_demo.png")
