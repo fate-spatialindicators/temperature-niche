@@ -115,7 +115,7 @@ sub <- dplyr::filter(pred_df, abs(depth)<250)
 pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(sub$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -125,7 +125,7 @@ sub <- dplyr::filter(pred_df, abs(depth)>250, abs(depth) < 500)
 pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(sub$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -135,7 +135,7 @@ sub <- dplyr::filter(pred_df, abs(depth)>500, abs(depth) < 750)
 pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(sub$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -146,7 +146,7 @@ saveRDS(index, "output/temp_index_wc_500_750.rds")
 pred_temp <- predict(fit, pred_df, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(pred_df$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -201,7 +201,7 @@ sub <- dplyr::filter(pred_df, abs(depth)<250)
 pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(sub$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -211,7 +211,7 @@ sub <- dplyr::filter(pred_df, abs(depth)>250, abs(depth) < 500)
 pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(sub$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -221,7 +221,7 @@ sub <- dplyr::filter(pred_df, abs(depth)>500, abs(depth) < 750)
 pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(sub$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -231,7 +231,7 @@ saveRDS(index, "output/temp_index_goa_500_750.rds")
 pred_temp <- predict(fit, pred_df, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(pred_df$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -290,7 +290,7 @@ sub <- dplyr::filter(pred_df, abs(depth)<250)
 pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
 index <- get_index(pred_temp)
 n_cells <- length(unique(sub$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -300,7 +300,7 @@ sub <- dplyr::filter(pred_df, abs(depth)>250, abs(depth) < 500)
 pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(sub$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -310,7 +310,7 @@ sub <- dplyr::filter(pred_df, abs(depth)>500, abs(depth) < 750)
 pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(sub$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se
@@ -320,7 +320,7 @@ saveRDS(index, "output/temp_index_bc_500_750.rds")
 pred_temp <- predict(fit, pred_df, return_tmb_object = TRUE)
 index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(pred_df$lat_lon))
-index$est <- index$log_est / n_cells
+index$est <- index$est / n_cells
 index$se <- index$se / n_cells
 index$lwr <- index$est - 1.96*index$se
 index$upr <- index$est + 1.96*index$se

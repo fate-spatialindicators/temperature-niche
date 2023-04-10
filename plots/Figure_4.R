@@ -58,6 +58,27 @@ g1 <- ggplot(dplyr::filter(summaries, year>=2003), aes(year, mean_est)) +
 
 ggsave(plot = g1, filename=paste0("plots/Figure_4.png"), width=7,height=7)
 
+
+g1 <- ggplot(dplyr::filter(summaries, year>=2003, species %in% c("Dover sole", "Pacific hake", "Walleye pollock")), aes(year, mean_est)) +
+  facet_wrap(~species, scale = "free", ncol=1) +
+  geom_ribbon(aes(ymin = lo10, ymax = hi10), alpha = 0.7, fill = brewer.blues(6)[1]) +
+  geom_ribbon(aes(ymin = lo20, ymax = hi20), alpha = 0.7, fill = brewer.blues(6)[2]) +
+  geom_ribbon(aes(ymin = lo30, ymax = hi30), alpha = 0.7, fill = brewer.blues(6)[3]) +
+  geom_ribbon(aes(ymin = lo40, ymax = hi40), alpha = 0.7, fill = brewer.blues(6)[4]) +
+  geom_ribbon(aes(ymin = lo50, ymax = hi50), alpha = 0.7, fill = brewer.blues(6)[5]) +
+  geom_line(col = brewer.blues(6)[6], alpha = 0.5) +
+  geom_line(data=temp_index, aes(year,m),col="red", alpha = 0.5) + 
+  theme_bw() +
+  # geom_hline(aes(yintercept=enviro_min),col="grey30",linetype="dashed") +
+  # geom_hline(aes(yintercept=enviro_hi),col="grey30",linetype="dashed") +
+  ylab("Temperature (C)") +
+  xlab("Year") +
+  theme(strip.background = element_rect(fill = "white")) +
+  theme(strip.text.x = element_text(size = 15),
+        axis.text = element_text(size = 15))
+ggsave(plot = g1, filename=paste0("plots/Figure_4_3spp.png"), width=7,height=7)
+
+
 # are there species that are broadening their niche?
 g1 <- ggplot(summaries, aes(year, hi10 - lo10)) +
   geom_line() +

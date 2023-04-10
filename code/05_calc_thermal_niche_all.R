@@ -32,24 +32,33 @@ species_table = dplyr::mutate(species_table,
                               n_regions = GOA + BC + WC) %>%
   dplyr::filter(n_regions > 1)
  
+
+mu_logdepth <- 5.21517
+sd_logdepth <- 0.8465829
+
 # gridded temp predictions from WC
 pred_temp_wc <- readRDS("output/wc_pred_temp.rds")
-pred_temp_wc <- dplyr::rename(pred_temp_wc, enviro = est)
+pred_temp_wc <- dplyr::rename(pred_temp_wc, enviro = est, X = longitude, Y = latitude)
+pred_temp_wc$enviro2 <- pred_temp_wc$enviro ^ 2 
 pred_temp_wc <- dplyr::group_by(pred_temp_wc, lat_lon) %>%
   dplyr::mutate(n = length(which(abs(enviro) > 14))) %>%
   dplyr::filter(n == 0) %>%
   dplyr::select(-n)
 pred_temp_wc <- dplyr::filter(pred_temp_wc, enviro > 0)
 pred_temp_wc$depth <- log(-pred_temp_wc$depth)
-pred_temp_wc$depth <- (pred_temp_wc$depth - 5.606277) / 0.8947727
+pred_temp_wc$depth <- (pred_temp_wc$depth - mu_logdepth) / sd_logdepth
+pred_temp_wc$logdepth <- pred_temp_wc$depth
+pred_temp_wc$logdepth2 <- pred_temp_wc$logdepth ^ 2
 pred_temp_wc$Area_km2 <- 10.28971 # area size of raster cells
+pred_temp_wc$region <- "COW"
 wc_area <- sum(pred_temp_wc$Area_km2[which(pred_temp_wc$year == 2010)])
 wc_area <- dplyr::group_by(pred_temp_wc, year) %>%
   dplyr::summarize(tot_km2 = sum(Area_km2))
 
 # gridded temp predictions from BC
 pred_temp_bc <- readRDS("output/bc_pred_temp.rds")
-pred_temp_bc <- dplyr::rename(pred_temp_bc, enviro = est)
+pred_temp_bc <- dplyr::rename(pred_temp_bc, enviro = est, X = longitude, Y = latitude)
+pred_temp_bc$enviro2 <- pred_temp_bc$enviro ^ 2 
 pred_temp_bc <- dplyr::group_by(pred_temp_bc, lat_lon) %>%
   dplyr::mutate(n = length(which(abs(enviro) > 14))) %>%
   dplyr::filter(n == 0) %>%
@@ -57,20 +66,27 @@ pred_temp_bc <- dplyr::group_by(pred_temp_bc, lat_lon) %>%
 pred_temp_bc <- dplyr::filter(pred_temp_bc, enviro > 0)
 pred_temp_bc <- dplyr::rename(pred_temp_bc, Area_km2 = cell_area)
 pred_temp_bc$depth <- log(pred_temp_bc$depth)
-pred_temp_bc$depth <- (pred_temp_bc$depth - 5.039356) / 0.6625063
+pred_temp_bc$depth <- (pred_temp_bc$depth - mu_logdepth) / sd_logdepth
+pred_temp_bc$logdepth <- pred_temp_bc$depth
+pred_temp_bc$logdepth2 <- pred_temp_bc$logdepth ^ 2
+pred_temp_bc$region <- "BC"
 bc_area <- dplyr::group_by(pred_temp_bc, year) %>%
   dplyr::summarize(tot_km2 = sum(Area_km2))
   
 # gridded temp predictions from GOA
 pred_temp_goa <- readRDS("output/goa_pred_temp.rds")
-pred_temp_goa <- dplyr::rename(pred_temp_goa, enviro = est)
+pred_temp_goa <- dplyr::rename(pred_temp_goa, enviro = est, X = longitude, Y = latitude)
+pred_temp_goa$enviro2 <- pred_temp_goa$enviro ^ 2 
 pred_temp_goa <- dplyr::group_by(pred_temp_goa, lat_lon) %>%
   dplyr::mutate(n = length(which(abs(enviro) > 14))) %>%
   dplyr::filter(n == 0) %>%
   dplyr::select(-n)
 pred_temp_goa <- dplyr::filter(pred_temp_goa, enviro > 0)
 pred_temp_goa$depth <- log(pred_temp_goa$depth)
-pred_temp_goa$depth <- (pred_temp_goa$depth - 4.847897) / 0.665218
+pred_temp_goa$depth <- (pred_temp_goa$depth - mu_logdepth) / sd_logdepth
+pred_temp_goa$logdepth <- pred_temp_goa$depth
+pred_temp_goa$logdepth2 <- pred_temp_goa$logdepth ^ 2
+pred_temp_goa$region <- "GOA"
 goa_area <- dplyr::group_by(pred_temp_goa, year) %>%
   dplyr::summarize(tot_km2 = sum(Area_km2))
 
@@ -81,8 +97,14 @@ for (i in 1:nrow(species_table)) {
   # WC
   spp <- df_wc$id[which(df_wc$species==this_species)]
   pred_df_wc <- NULL
+  
+  fit <- readRDS(file = paste0("output/all/", this_species, ".rds"))
+  fit <- fit[[4]]
+  
+  if(class(fit) != "try-error") {
+    
   if(length(spp) > 0) {
-    fit <- readRDS(file = paste0("output/wc/model_", spp, ".rds"))
+    #fit <- readRDS(file = paste0("output/wc/model_", spp, ".rds"))
     # make predictions -- response not link space
     pred_df_wc <- predict(fit, newdata = dplyr::filter(pred_temp_wc, year %in% unique(fit$data$year))) # , type="response")
     pred_df_wc <- ungroup(pred_df_wc) %>% dplyr::select(year, depth, enviro, Area_km2, est)
@@ -92,7 +114,7 @@ for (i in 1:nrow(species_table)) {
   spp <- df_goa$id[which(df_goa$species==this_species)]
   pred_df_goa <- NULL
   if(length(spp) > 0) {
-    fit <- readRDS(file = paste0("output/goa/model_", spp, ".rds"))
+    #fit <- readRDS(file = paste0("output/goa/model_", spp, ".rds"))
     # make predictions -- response not link space
     pred_df_goa <- predict(fit, newdata = dplyr::filter(pred_temp_goa, year %in% unique(fit$data$year))) # , type="response")
     pred_df_goa <- ungroup(pred_df_goa) %>% dplyr::select(year, depth, enviro, Area_km2, est)
@@ -102,7 +124,7 @@ for (i in 1:nrow(species_table)) {
   spp <- df_bc$id[which(df_bc$species==this_species)]
   pred_df_bc <- NULL
   if(length(spp) > 0) {
-    fit <- readRDS(file = paste0("output/bc/model_", spp, ".rds"))
+    #fit <- readRDS(file = paste0("output/bc/model_", spp, ".rds"))
     # make predictions -- response not link space
     pred_df_bc <- predict(fit, newdata = dplyr::filter(pred_temp_bc, year %in% unique(fit$data$year))) # , type="response")
     pred_df_bc <- ungroup(pred_df_bc) %>% dplyr::select(year, depth, enviro, Area_km2, est)
@@ -185,6 +207,7 @@ for (i in 1:nrow(species_table)) {
   } else {
     all_temp <- rbind(all_temp, sampled_temp_year)
   }
+  } # end if 
 
 }
 

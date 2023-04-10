@@ -102,6 +102,7 @@ expanded_df2 <- dplyr::left_join(expanded_df_orig, range_all)
 expanded_df2 <- dplyr::filter(expanded_df2,
                              temp > lo, temp < hi)
 
+species_table$b0 <- NA
 species_table$b1 <- NA
 species_table$b2 <- NA
 for(i in 1:nrow(species_table)) {
@@ -123,6 +124,10 @@ for(i in 1:nrow(species_table)) {
   if(class(coefs) != "try-error") {
     species_table$b1[i] = coefs[1]
     species_table$b2[i] = coefs[2]
+    
+    # calculate mean intercept
+    indx <- which(tidy(f[[4]])$term %in% c("regionBC","regionCOW","regionGOA"))
+    species_table$b0[i] <- mean(as.numeric(unlist(tidy(f[[4]])[indx,"estimate"])))
   }
 }
 
@@ -171,5 +176,32 @@ g3 <- d %>%
   theme(text = element_text(size=20))
 ggsave(g3, file = "plots/Figure_2_alt_combined_foreccwo.png")
 
+# calculate quadratic lo / hi
+species_table$lo = NA
+species_table$hi = NA
+for(i in 1:nrow(species_table)) {
+  a = species_table$b2[i]
+  b = species_table$b1[i]
+  c = species_table$b0[i]
+  roots = (-b -sqrt(b*b-4*a*c))/(2*a)
+  roots[2] = (-b +sqrt(b*b-4*a*c))/(2*a)
+  species_table$lo[i] = max(min(roots), 0)
+  species_table$hi[i] = max(roots)
+}
 
+species_table$diff <- species_table$hi - species_table$lo
+species_table$mid <- (species_table$hi - species_table$lo)/2
+ranges <- dplyr::filter(species_table, !is.na(diff)) %>%
+  dplyr::arrange(diff)
+ranges$species = factor(ranges$species, levels = ranges$species)
+
+g4 <- ggplot(ranges, aes(species, mid)) + 
+  #geom_vline(aes(xintercept=0)) + 
+  geom_linerange(aes(ymin=lo,ymax=hi), col=viridis(1), size=1.5) + 
+  ylab("Celsius") + 
+  xlab("") + 
+  coord_flip() + 
+  theme_bw() + 
+  theme(text = element_text(size=15))
+ggsave(g4, file = "plots/Ranges_fig_foreccwo.png")
 
