@@ -106,15 +106,39 @@ coast <- suppressWarnings(suppressMessages(
 utm_zone10 <- 3157
 coast_proj <- sf::st_transform(coast, crs = utm_zone10)
 
-survey <- dplyr::filter(dat, year == 2015)
+survey <- dplyr::filter(dat, year == 2015) %>%
+  dplyr::rename(Survey = survey)
 
-g1 <- ggplot(coast_proj) + geom_sf(fill = "antiquewhite") + 
+survey$Survey <- factor(survey$Survey, levels = c("GOA","BC","COW"))
+g1 <- ggplot(coast_proj) + geom_sf(fill = "grey70") + 
   theme_bw() + 
+  theme(panel.background = element_rect(fill="lightsteelblue"),
+        legend.position = "none") + 
   labs(x = "Longitude", y = "Latitude") + 
-  geom_point(data = survey, aes(longitude*1000, latitude*1000, col=survey), alpha=0.5, 
-             size=0.5) + 
-  scale_color_viridis(end=0.8, discrete=TRUE)
+  geom_point(data = survey, aes(longitude*1000, latitude*1000, col=Survey), alpha=0.5, 
+             size=0.3) + 
+  scale_color_viridis(begin=0.2, end=0.8, discrete=TRUE, option="magma") + 
+  xlim(-2556215, 1000000) + 
+  ylim(3587346, 6995173)
 ggsave(g1, file="all_map.png")
+
+g2 <- dplyr::filter(survey, depth >= 50) %>%
+ggplot(aes(log(depth), temp, col = Survey)) + 
+  geom_point(alpha=0.4, size=0.2) + 
+  scale_color_viridis(begin=0.2, end=0.8, discrete=TRUE, option="magma") + 
+  theme_bw(base_size=8) + 
+  xlab("Ln (depth)") + 
+  ylab("Temperature (°C)")
+
+# library(patchwork)
+# combined_plot <- g1 + g2
+# combined_plot + plot_layout(widths = c(2,1), heights = c(2,4))
+# ggsave("test.png")
+
+library(cowplot)
+combo <- ggdraw(g1) + 
+  draw_plot(g2, x = 0.18, y = 0.11, width = 0.5, height = 0.4)
+ggsave("plots/Figure_combined_map_inset.png")
 
 
 survey$Density = survey$temp - mean(survey$temp)

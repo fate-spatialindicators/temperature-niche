@@ -158,7 +158,6 @@ for (i in 1:nrow(species_table)) {
   if(use_goa) {
     combined <- dplyr::filter(combined, year %in% goa_area$year)
     totarea <- totarea + goa_area$tot_km2[1]
-    years <- goa_area$year
   }
   
   #years = unique()
@@ -171,6 +170,7 @@ for (i in 1:nrow(species_table)) {
     sampled_df <- sub[sampled_idx,]
     cutoff <- which(cumsum(sampled_df$Area_km2) > totarea)[1]
     sampled_df <- sampled_df[1:cutoff,]
+    
     # summarize
     summarized_df <- 
       dplyr::summarise(sampled_df, year = year[1],
@@ -190,6 +190,13 @@ for (i in 1:nrow(species_table)) {
     summarized_df$sci_name <- fit$data$scientific_name[1]
     summarized_df$species <- fit$data$species[1]
     summarized_df$depth <- df$depth_effect[i]
+    # calculate mean temp for this year -- based on estimated distribution
+    sub <- dplyr::arrange(sub, -est) %>%
+      dplyr::mutate(tot = exp(est))
+    indx <- which(cumsum(sub$tot/sum(sub$tot)) > 0.95)[1]
+    summarized_df$avg_temp <- mean(sub$enviro[1:indx])
+    summarized_df$lo_temp <- quantile(sub$enviro[1:indx], 0.025)
+    summarized_df$hi_temp <- quantile(sub$enviro[1:indx], 0.975)
     if(ii == 1) {
       sampled_temp_year <- summarized_df
     } else {
