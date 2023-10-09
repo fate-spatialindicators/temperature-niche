@@ -106,8 +106,8 @@ for (i in 1:nrow(species_table)) {
   if(length(spp) > 0) {
     #fit <- readRDS(file = paste0("output/wc/model_", spp, ".rds"))
     # make predictions -- response not link space
-    pred_df_wc <- predict(fit, newdata = dplyr::filter(pred_temp_wc, year %in% unique(fit$data$year))) # , type="response")
-    pred_df_wc <- ungroup(pred_df_wc) %>% dplyr::select(year, depth, enviro, Area_km2, est)
+    #pred_df_wc <- predict(fit, newdata = dplyr::filter(pred_temp_wc, year %in% unique(fit$data$year))) # , type="response")
+    #pred_df_wc <- ungroup(pred_df_wc) %>% dplyr::select(year, depth, enviro, Area_km2, est)
   }
   
   # GOA
@@ -121,14 +121,14 @@ for (i in 1:nrow(species_table)) {
   }
   
   # BC
-  spp <- df_bc$id[which(df_bc$species==this_species)]
+  # spp <- df_bc$id[which(df_bc$species==this_species)]
   pred_df_bc <- NULL
-  if(length(spp) > 0) {
-    #fit <- readRDS(file = paste0("output/bc/model_", spp, ".rds"))
-    # make predictions -- response not link space
-    pred_df_bc <- predict(fit, newdata = dplyr::filter(pred_temp_bc, year %in% unique(fit$data$year))) # , type="response")
-    pred_df_bc <- ungroup(pred_df_bc) %>% dplyr::select(year, depth, enviro, Area_km2, est)
-  }  
+  # if(length(spp) > 0) {
+  #   #fit <- readRDS(file = paste0("output/bc/model_", spp, ".rds"))
+  #   # make predictions -- response not link space
+  #   pred_df_bc <- predict(fit, newdata = dplyr::filter(pred_temp_bc, year %in% unique(fit$data$year))) # , type="response")
+  #   pred_df_bc <- ungroup(pred_df_bc) %>% dplyr::select(year, depth, enviro, Area_km2, est)
+  # }  
   
   # combine the 
   use_goa = FALSE
@@ -153,7 +153,7 @@ for (i in 1:nrow(species_table)) {
   }
   
   # if using GOA data, apply to the same set of years
-  totarea <- wc_area$tot_km2[1] + bc_area$tot_km2[1]
+  totarea <- 0#wc_area$tot_km2[1] + bc_area$tot_km2[1]
   years <- wc_area$year
   if(use_goa) {
     combined <- dplyr::filter(combined, year %in% goa_area$year)
@@ -218,4 +218,4 @@ for (i in 1:nrow(species_table)) {
 
 }
 
-saveRDS(all_temp, "output/temp_niche_combined.rds")
+saveRDS(all_temp, "output/temp_niche_combined_goa.rds")

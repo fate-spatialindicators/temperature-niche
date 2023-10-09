@@ -26,7 +26,7 @@ dat <- dplyr::left_join(dat, temp_index)
 
 library(stringr)
 rho = dplyr::group_by(dat, species) %>% 
-  dplyr::summarise(rho = cor(mean_temp, mean_enviro)) %>%
+  dplyr::summarise(rho = cor(mean_enviro, avg_temp)) %>%
   arrange(rho)
 rho$species <- str_to_title(rho$species)
 rho$species[which(rho$species == "North Pacific Spiny Dogfish")] = "Spiny Dogfish"
@@ -38,37 +38,74 @@ ggplot(rho, aes(species, rho, col=rho)) +
   xlab("") + ylab("Correlation (Mean thermal niche, temperature)") + 
   theme_bw() + 
   scale_colour_gradient2() + 
-  coord_flip() + theme(text = element_text(size=16)) +
+  coord_flip() + theme(text = element_text(size=8)) +
   theme(legend.position = "none")
 ggsave("plots/Correlations.png")
 
 library(glmmTMB)
+
+
 fit <- glmmTMB(diff_width ~ mean_temp + (1|species), data = dat)
 fit <- glmmTMB(width ~ mean_temp * (species), data = dat)
 
 
 dat <- dplyr::group_by(dat, species) %>% 
-  dplyr::mutate(diff_width = c(NA, diff(width)))
+  dplyr::mutate(diff_width = c(NA, diff(width)),
+                diff_temp = c(NA, diff(avg_temp)))
 
-fit <- glmmTMB(diff_width ~ diff + (1|species), data = dat)
-fit <- glmmTMB(diff_width ~ species + diff : (species), data = dat)
+sub <- dplyr::filter(dat, !is.na(diff_width), !is.na(diff_temp))
+sub$avg_temp2 <- sub$avg_temp^2
+sub$diff_temp2 <- sub$diff_temp^2
+
+library(brms)
+
+fit <- brm(diff_width ~ -1 + diff_temp + (-1+diff_temp|species), data = sub,
+           chains = 4,
+           iter = 4000)
+
+# fit2 <- brm(width ~ 1 + mean_enviro + (1 + mean_enviro|species), data = sub,
+#            chains = 4,
+#            iter = 3000)
+
+coefs <- as.data.frame(coef(fit)$species[,,1])
+names(coefs) <- c("estimate", "se","lo95","hi95")
+coefs$Species <- rownames(coefs)
+
+# calculate correlation between predicted and obs by species
+pred <- predict(fit)
+sub$pred <- pred[,"Estimate"]
+rho <- dplyr::group_by(sub, species) %>%
+  dplyr::summarise(rho = cor(pred, diff_width)) %>%
+  dplyr::rename(Species = species, Corr=rho) %>% as.data.frame()
+coefs <- dplyr::left_join(coefs, rho)
+
+coefs$Species <- paste0(toupper(substr(coefs$Species,1,1)), substr(coefs$Species,2,nchar(coefs$Species)))
+coefs <- dplyr::arrange(coefs, estimate)
+coefs$Speciesf <- factor(coefs$Species, levels = coefs$Species)  
+
+p1 <- ggplot(coefs, aes(Speciesf, estimate, col=Corr)) + 
+  geom_hline(aes(yintercept=0), col="red", alpha=0.5) + 
+  geom_linerange(aes(ymin=lo95, ymax=hi95), col="grey70") +
+  geom_linerange(aes(ymin=lo95, ymax=hi95)) + 
+  geom_point() + 
+  coord_flip() + 
+  theme_bw() + 
+  ylab(expression(paste(Delta, "Niche width (",degree,"C)"))) + xlab("") + 
+  scale_color_gradient2()
 
 
 
+# fit <- brm(width ~ (1+avg_temp|species), data = sub,
+#            chains = 4,
+#            iter = 2000)
 
-fit <- glmmTMB(width ~ mean_temp, data = dat)
-fit <- glmmTMB(diff_width ~ diff, data = dat)
-fit <- glmmTMB(width ~ year, data = dat)
 
+# ggplot(dat, aes(year, mean_enviro)) + 
+#   geom_linerange(aes(ymin=lo10_enviro, ymax = hi10_enviro), col=viridis(1), 
+#                  alpha=0.3,position=position_dodge2(preserve = "single", width = 1)) + 
+#   geom_smooth() + 
+#   theme_bw() + ylab("Temperature") + xlab("Year") + theme(text = element_text(size=16))
+# ggsave("plots/Trend_temp.png")
 
-ggplot(dat, aes(year, mean_enviro)) + 
-  geom_linerange(aes(ymin=lo10_enviro, ymax = hi10_enviro), col=viridis(1), 
-                 alpha=0.3,position=position_dodge2(preserve = "single", width = 1)) + 
-  geom_smooth() + 
-  theme_bw() + ylab("Temperature") + xlab("Year") + theme(text = element_text(size=16))
-ggsave("plots/Trend_temp.png")
-
-library(mgcv)
-fit <- gam(width ~ s(diff), data = dat)
 
 

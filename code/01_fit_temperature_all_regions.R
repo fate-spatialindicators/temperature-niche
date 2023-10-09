@@ -1,8 +1,10 @@
 # devtools::install_github("pbs-assess/sdmTMB", "quadratic")
+# devtools::install_github("pbs-assess/gfplot")
 library(sdmTMB)
 library(dplyr)
 library(sp)
 library(lubridate)
+library(gfplot)
 
 cow <- readRDS("survey_data/joined_nwfsc_data.rds")
 # just use haul info -- can be for any spp
@@ -288,7 +290,7 @@ saveRDS(pred_temp, "output/bc_pred_temp.rds")
 # Repeat for cells with depth < 250m
 sub <- dplyr::filter(pred_df, abs(depth)<250)
 pred_temp <- predict(fit, sub, return_tmb_object = TRUE)
-index <- get_index(pred_temp)
+index <- get_index(pred_temp, bias_correct = TRUE)
 n_cells <- length(unique(sub$lat_lon))
 index$est <- index$est / n_cells
 index$se <- index$se / n_cells

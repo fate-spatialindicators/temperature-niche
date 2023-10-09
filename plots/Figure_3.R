@@ -15,7 +15,7 @@ goa_index <- dplyr::filter(goa_index, year %in% unique(goa$year))
 bc_index <- dplyr::filter(bc_index, year %in% unique(bc$year))
 
 index = rbind(wc_index, goa_index, bc_index)
-index$Region = as.factor(index$region)
+index$Region = factor(index$region, levels = c("GOA","BC","COW"))
 g1 = ggplot(index, aes(year, est, fill=Region, col=Region)) + 
   geom_ribbon(aes(ymin=lwr, ymax=upr),alpha=0.3,col=NA) + 
   geom_point(alpha=0.5) + 
@@ -23,7 +23,7 @@ g1 = ggplot(index, aes(year, est, fill=Region, col=Region)) +
   xlab("Year") + 
   ylab(expression(paste("Temperature index ", degree, "C"))) + 
   theme_bw() + 
-  scale_fill_viridis_d(end=0.8) + 
-  scale_color_viridis_d(end=0.8)
+  scale_fill_viridis_d(begin = 0.2, end=0.8, option="magma") + 
+  scale_color_viridis_d(begin = 0.2, end=0.8, option="magma")
 
 ggsave(plot = g1, filename="plots/Figure_3.png", width = 6, height = 5)

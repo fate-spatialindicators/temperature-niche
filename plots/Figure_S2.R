@@ -32,15 +32,20 @@ df$mid_se = sqrt((0.5^2)*(df$hi_se^2) + (0.5^2)*(df$lo_se^2))
 means = dplyr::group_by(df, Region) %>%
   dplyr::summarise(mid = mean(mid,na.rm=T),
                    range = mean(range,na.rm=T))
+df$Region <- factor(df$Region, levels = c("GOA","BC","COW"))
+means$Region <- factor(means$Region, levels = c("GOA","BC","COW"))
+mycols <- viridis::magma(3, begin=0.2, end=0.8)
 
-g1 = ggplot(df, aes(mid, range, col=Region)) + 
+g1 = ggplot(dplyr::filter(df,mid>0,range>0), aes(mid, range, col=Region)) + 
   geom_vline(data = means, aes(xintercept=mid, col=Region)) +
   geom_hline(data = means, aes(yintercept=range, col=Region)) +
   geom_point(size=3,alpha=0.5) + 
-  theme_bw() + 
-  scale_color_viridis_d(end=0.8) + 
+  #scale_color_manual(values = mycols) + 
   xlab("Midpoint of estimated thermal niche") + 
-  ylab("Range of thermal niche") 
+  ylab("Range of thermal niche") + 
+  theme_bw() +
+  scale_fill_viridis_d(begin = 0.2, end=0.8, option="magma") + 
+  scale_color_viridis_d(begin = 0.2, end=0.8, option="magma")
 
 
 ggsave(plot = g1, filename="plots/Figure_S2.png", width = 6, height = 5)

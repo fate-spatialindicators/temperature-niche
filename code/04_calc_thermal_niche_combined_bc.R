@@ -103,22 +103,22 @@ for (i in 1:nrow(species_table)) {
   
   if(class(fit) != "try-error") {
     
-  if(length(spp) > 0) {
-    #fit <- readRDS(file = paste0("output/wc/model_", spp, ".rds"))
-    # make predictions -- response not link space
-    pred_df_wc <- predict(fit, newdata = dplyr::filter(pred_temp_wc, year %in% unique(fit$data$year))) # , type="response")
-    pred_df_wc <- ungroup(pred_df_wc) %>% dplyr::select(year, depth, enviro, Area_km2, est)
-  }
+  # if(length(spp) > 0) {
+  #   #fit <- readRDS(file = paste0("output/wc/model_", spp, ".rds"))
+  #   # make predictions -- response not link space
+  #   pred_df_wc <- predict(fit, newdata = dplyr::filter(pred_temp_wc, year %in% unique(fit$data$year))) # , type="response")
+  #   pred_df_wc <- ungroup(pred_df_wc) %>% dplyr::select(year, depth, enviro, Area_km2, est)
+  # }
   
   # GOA
-  spp <- df_goa$id[which(df_goa$species==this_species)]
-  pred_df_goa <- NULL
-  if(length(spp) > 0) {
-    #fit <- readRDS(file = paste0("output/goa/model_", spp, ".rds"))
-    # make predictions -- response not link space
-    pred_df_goa <- predict(fit, newdata = dplyr::filter(pred_temp_goa, year %in% unique(fit$data$year))) # , type="response")
-    pred_df_goa <- ungroup(pred_df_goa) %>% dplyr::select(year, depth, enviro, Area_km2, est)
-  }
+  # spp <- df_goa$id[which(df_goa$species==this_species)]
+  # pred_df_goa <- NULL
+  # if(length(spp) > 0) {
+  #   #fit <- readRDS(file = paste0("output/goa/model_", spp, ".rds"))
+  #   # make predictions -- response not link space
+  #   pred_df_goa <- predict(fit, newdata = dplyr::filter(pred_temp_goa, year %in% unique(fit$data$year))) # , type="response")
+  #   pred_df_goa <- ungroup(pred_df_goa) %>% dplyr::select(year, depth, enviro, Area_km2, est)
+  # }
   
   # BC
   spp <- df_bc$id[which(df_bc$species==this_species)]
@@ -133,32 +133,32 @@ for (i in 1:nrow(species_table)) {
   # combine the 
   use_goa = FALSE
   if(!is.null(pred_df_wc)) {
-    combined <- pred_df_wc
-    if(!is.null(pred_df_bc)) {
-      combined <- rbind(combined, pred_df_bc)
-    }
-    if(!is.null(pred_df_goa)) {
-      combined <- rbind(combined, pred_df_goa)
-      use_goa <- TRUE
-    }
+    # combined <- pred_df_wc
+    # if(!is.null(pred_df_bc)) {
+    #   combined <- rbind(combined, pred_df_bc)
+    # }
+    # if(!is.null(pred_df_goa)) {
+    #   combined <- rbind(combined, pred_df_goa)
+    #   use_goa <- TRUE
+    # }
   } else {
     # wc data not used
     if(!is.null(pred_df_bc)) {
       combined <- pred_df_bc
     }
-    if(!is.null(pred_df_goa)) {
-      combined <- rbind(combined, pred_df_goa)
-      use_goa <- TRUE
-    }
+    # if(!is.null(pred_df_goa)) {
+    #   combined <- rbind(combined, pred_df_goa)
+    #   use_goa <- TRUE
+    # }
   }
   
   # if using GOA data, apply to the same set of years
-  totarea <- wc_area$tot_km2[1] + bc_area$tot_km2[1]
+  totarea <- bc_area$tot_km2[1]
   years <- wc_area$year
-  if(use_goa) {
-    combined <- dplyr::filter(combined, year %in% goa_area$year)
-    totarea <- totarea + goa_area$tot_km2[1]
-  }
+  # if(use_goa) {
+  #   combined <- dplyr::filter(combined, year %in% goa_area$year)
+  #   totarea <- totarea + goa_area$tot_km2[1]
+  # }
   
   #years = unique()
   # Loop over years -- no clean way to do this with dplyr
@@ -218,4 +218,4 @@ for (i in 1:nrow(species_table)) {
 
 }
 
-saveRDS(all_temp, "output/temp_niche_combined.rds")
+saveRDS(all_temp, "output/temp_niche_combined_bc.rds")

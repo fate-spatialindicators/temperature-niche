@@ -34,6 +34,7 @@ df$ID <- seq(1,nrow(df))
 expanded_df <- expand.grid(ID = unique(df$ID),
                           temp = seq(1,14,length.out=100))
 expanded_df <- dplyr::left_join(expanded_df, df[,c("ID","species","b_env","b_env2","region")])
+expanded_df <- dplyr::rename(expanded_df, Region = region)
 
 # for each region, create a set of limits for each species of the temps the species have been observed at
 cow <- readRDS("survey_data/joined_nwfsc_data.rds")
@@ -68,7 +69,7 @@ expanded_df <- rbind(df_cow, df_bc, df_goa)
 # calculate predicted effect
 expanded_df$effect <- expanded_df$temp * expanded_df$b_env + (expanded_df$temp^2) * expanded_df$b_env2
 
-expanded_df = dplyr::rename(expanded_df, Region=region)
+#expanded_df = dplyr::rename(expanded_df, Region=region)
 g1 <- expanded_df %>%
   ggplot(aes(temp, effect,col=Region)) + 
   #geom_line(aes(size=1), alpha=0.5) + 

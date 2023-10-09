@@ -3,13 +3,14 @@ library(dplyr)
 library(pals)
 
 region = "WC"
-summaries = readRDS(paste0("output/temp_niche_",region,".rds"))
-summaries <- dplyr::filter(summaries, depth==TRUE) # only include models that est depth
+#summaries = readRDS(paste0("output/temp_niche_",region,".rds"))
+
+summaries = readRDS(paste0("output/temp_niche_combined_wc.rds"))
 summaries$species = as.character(summaries$species)
 summaries$species = paste0(toupper(substr(summaries$species,1,1)), 
                         substr(summaries$species,2,nchar(summaries$species)))
 
-temp_index = readRDS(paste0("output/temp_index_",region,".rds"))
+#temp_index = readRDS(paste0("output/temp_index_",region,".rds"))
 
 g1 <- ggplot(summaries, aes(year, mean_enviro)) +
   facet_wrap(~species, scale = "free") +
@@ -20,7 +21,7 @@ g1 <- ggplot(summaries, aes(year, mean_enviro)) +
   geom_ribbon(aes(ymin = lo50_enviro, ymax = hi50_enviro), alpha = 0.7, fill = brewer.blues(6)[5]) +
   geom_line(col = brewer.blues(6)[6], alpha = 0.5) +
   theme_bw() +
-  geom_line(data = temp_index, aes(year, est), col="red",alpha=0.5) + 
+  #geom_line(data = temp_index, aes(year, est), col="red",alpha=0.5) + 
   # geom_hline(aes(yintercept=enviro_min),col="grey30",linetype="dashed") +
   # geom_hline(aes(yintercept=enviro_hi),col="grey30",linetype="dashed") +
   ylab(expression(paste("Temperature ", degree, "C"))) +

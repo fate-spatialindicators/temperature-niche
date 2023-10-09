@@ -31,6 +31,7 @@ df = dplyr::left_join(df_depth,df_nodepth)
 
 df = dplyr::rename(df, Region = region)
 
+df$Region <- factor(df$Region, levels = c("GOA","BC","COW"))
 g1 = ggplot(df, aes(depth_mid, mid,col=Region)) + 
   geom_abline(aes(intercept=0,slope=1),col="red",alpha=0.6) + 
   geom_linerange(aes(xmin = depth_lo, xmax = depth_hi), alpha=0.3) +
@@ -38,7 +39,8 @@ g1 = ggplot(df, aes(depth_mid, mid,col=Region)) +
   geom_point(alpha=0.3) + 
   xlab("Midpoint (depth included)") + 
   ylab("Midpoint (depth not included)") + 
-  scale_color_viridis_d(end=0.8) + 
+  scale_fill_viridis_d(begin = 0.2, end=0.8, option="magma") + 
+  scale_color_viridis_d(begin = 0.2, end=0.8, option="magma") + 
   theme_bw()
 
 ggsave(plot = g1, filename="plots/Figure_S1.png", width = 6, height = 5)
