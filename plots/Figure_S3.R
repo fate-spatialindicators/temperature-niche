@@ -69,7 +69,7 @@ index = dplyr::rename(index, Depth = depth)
 
 index$region = factor(index$region, levels = c("GOA","BC","COW"))
 
-g1 = ggplot(dplyr::filter(index, Depth != "All"), aes(year, est, fill=Depth, col=Depth)) + 
+g1 = ggplot(dplyr::filter(index, Depth != "All", year>=2003), aes(year, est, fill=Depth, col=Depth)) + 
   geom_ribbon(aes(ymin=lwr, ymax=upr),alpha=0.3,col=NA) + 
   geom_point(alpha=0.5) + 
   geom_line(alpha=0.5) +

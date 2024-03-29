@@ -1,3 +1,4 @@
+library(sdmTMB)
 library(dplyr)
 library(pals)
 library(sp)
@@ -144,36 +145,96 @@ for (i in 1:nrow(species_table)) {
 }
   
 
+for (i in 1:nrow(species_table)) {
+  this_species = species_table$species[i]
+  sub <- dplyr::filter(dat, species == this_species, !is.na(depth))
+  sub <- add_utm_columns(sub, ll_names = c("longitude_dd", "latitude_dd"))
+  
+  sub$enviro <- sub$temp
+  sub$enviro2 <- sub$enviro * sub$enviro
+  sub$logdepth <- scale(log(sub$depth))
+  sub$logdepth2 <- sub$logdepth * sub$logdepth
+  sub <- dplyr::filter(sub, !is.na(enviro), !is.na(depth))
+  
+  priors <- sdmTMBpriors(
+    matern_s = pc_matern(
+      range_gt = 50, range_prob = 0.05, #A value one expects the range is greater than with 1 - range_prob probability.
+      sigma_lt = 25, sigma_prob = 0.05 #A value one expects the marginal SD (sigma_O or sigma_E internally) is less than with 1 - sigma_prob probability.
+    ),
+    matern_st = pc_matern(
+      range_gt = 50, range_prob = 0.05,
+      sigma_lt = 25, sigma_prob = 0.05
+    ),
+    ar1_rho = normal(0.7,0.1),
+    tweedie_p = normal(1.5,0.2)
+  )
+  
+  bnd <- INLA::inla.nonconvex.hull(cbind(sub$X, sub$Y), 
+                                   convex = -0.05)
+  inla_mesh <- INLA::inla.mesh.2d(
+    boundary = bnd,
+    max.edge = c(150, 1000),
+    offset = -0.1, # default -0.1
+    cutoff = 50,
+    min.angle = 5 # default 21
+  )
+  spde <- make_mesh(sub, c("X", "Y"), mesh = inla_mesh)
+  # refactor to avoid identifiability errors
+  sub$region <- as.factor(as.character(sub$region))
+  fit <- readRDS(paste0("output/all/", this_species, ".rds"))
+  
+  formula = "cpue_kg_km2 ~ -1 + logdepth + logdepth2"
+
+  fit[[4]] <- try(sdmTMB(
+    formula = as.formula(formula),
+    mesh = spde,
+    time = "year",
+    family = tweedie(link = "log"),
+    data = sub,
+    priors = priors,
+    share_range = TRUE,
+    spatial = "on",
+    spatiotemporal = "rw",
+    control = sdmTMBcontrol(quadratic_roots = FALSE, 
+                            normalize = TRUE,
+                            multiphase = TRUE,
+                            newton_loops = 1),
+    extra_time = (1991:2021)[which(1991:2021 %in% unique(sub$year) == FALSE)]
+  ), silent = TRUE)
+  
+  # save list of fitted models
+  saveRDS(fit, file = paste0("output/all/", this_species, ".rds"))
+}
+
+
 species_table$model_1 = NA
 species_table$model_2 = NA
 species_table$model_3 = NA
-for (i in 1:nrow(species_table)) {
-  
- fit = readRDS(paste0("output/all/", species_table$species[i], ".rds")) 
- s = sanity(fit[[1]])
- species_table$model_1[i] = s$hessian_ok + s$eigen_values_ok + s$nlminb_ok
- if(species_table$model_1[i] == 2) {
-   species_table$model_1[i] = AIC(fit[[1]]) 
- } else {
-   species_table$model_1[i] = NA
- }
-   
- s = sanity(fit[[2]])
- species_table$model_2[i] = s$hessian_ok + s$eigen_values_ok + s$nlminb_ok
- if(species_table$model_2[i] == 3) {
-   species_table$model_2[i] = AIC(fit[[2]]) 
- } else {
-   species_table$model_2[i] = NA
- }
- 
- s = sanity(fit[[3]])
- species_table$model_3[i] = s$hessian_ok + s$eigen_values_ok + s$nlminb_ok
- if(species_table$model_3[i] == 3) {
-   species_table$model_3[i] = AIC(fit[[3]]) 
- } else {
-   species_table$model_3[i] = NA
- }
- 
+species_table$model_4 = NA
+species_table$best_model = NA
+species_table <- dplyr::filter(species_table, n_region==1)
+
+get_conv_aic = function(fit) {
+  ret <- NA
+  if(length(which(is.na(fit$sd_report$sd))) == 0) { # make sure model converges
+    s <- sanity(fit)
+    conv = s$hessian_ok + s$eigen_values_ok + s$nlminb_ok
+    if(conv == 3) {
+      ret <- AIC(fit) 
+    } 
+  }
+  return(ret)
 }
-species_table$best_model <- apply(species_table[,7:8],1,which.min) + 1
+
+model_names <- grep("model", names(species_table))
+for (i in 1:nrow(species_table)) {
+ fit = readRDS(paste0("output/all/", species_table$species[i], ".rds")) 
+ species_table$model_1[i] <- get_conv_aic(fit[[1]]) 
+ species_table$model_2[i] <- get_conv_aic(fit[[2]]) 
+ species_table$model_3[i] <- get_conv_aic(fit[[3]]) 
+ species_table$model_4[i] <- get_conv_aic(fit[[4]]) 
+ best_mod <- which.min(species_table[i,model_names])
+ if(length(best_mod) > 0) species_table$best_model[i] <- best_mod
+}
+
 saveRDS(species_table,"species_table_singleregion.rds")

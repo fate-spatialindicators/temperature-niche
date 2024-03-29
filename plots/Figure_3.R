@@ -16,7 +16,7 @@ bc_index <- dplyr::filter(bc_index, year %in% unique(bc$year))
 
 index = rbind(wc_index, goa_index, bc_index)
 index$Region = factor(index$region, levels = c("GOA","BC","COW"))
-g1 = ggplot(index, aes(year, est, fill=Region, col=Region)) + 
+g1 = ggplot(dplyr::filter(index, year >= 2003), aes(year, est, fill=Region, col=Region)) + 
   geom_ribbon(aes(ymin=lwr, ymax=upr),alpha=0.3,col=NA) + 
   geom_point(alpha=0.5) + 
   geom_line(alpha=0.5) + 

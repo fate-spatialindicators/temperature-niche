@@ -1,6 +1,8 @@
 library(dplyr)
 library(pals)
 library(sp)
+library(glmmTMB)
+library(brms)
 
 set.seed(1234)
 
@@ -33,21 +35,25 @@ rho$species[which(rho$species == "North Pacific Spiny Dogfish")] = "Spiny Dogfis
 rho$species <- factor(rho$species, levels = rho$species)
 
 
-ggplot(rho, aes(species, rho, col=rho)) + 
-  geom_point(size=4, alpha=1) + 
-  xlab("") + ylab("Correlation (Mean thermal niche, temperature)") + 
-  theme_bw() + 
-  scale_colour_gradient2() + 
-  coord_flip() + theme(text = element_text(size=8)) +
-  theme(legend.position = "none")
-ggsave("plots/Correlations.png")
+# ggplot(rho, aes(species, rho, col=rho)) + 
+#   geom_point(size=4, alpha=1) + 
+#   xlab("") + ylab("Correlation (Mean thermal niche, temperature)") + 
+#   theme_bw() + 
+#   scale_colour_gradient2() + 
+#   coord_flip() + theme(text = element_text(size=8)) +
+#   theme(legend.position = "none")
+# ggsave("plots/Correlations.png")
 
-library(glmmTMB)
-
-
-fit <- glmmTMB(diff_width ~ mean_temp + (1|species), data = dat)
+#fit <- glmmTMB(diff_width ~ mean_temp + (1|species), data = dat)
 fit <- glmmTMB(width ~ mean_temp * (species), data = dat)
 
+# test for trend through time
+coefs <- data.frame(species = unique(dat$species), coef = 0, p=0)
+for(i in 1:nrow(coefs)) {
+  fit <- lm(mean_enviro ~ year, data = dplyr::filter(dat, species == coefs$species[i]))
+  coefs$coef[i] <- summary(fit)$coefficients[2,1]
+  coefs$p[i] <- summary(fit)$coefficients[2,4]
+}
 
 dat <- dplyr::group_by(dat, species) %>% 
   dplyr::mutate(diff_width = c(NA, diff(width)),
@@ -57,7 +63,7 @@ sub <- dplyr::filter(dat, !is.na(diff_width), !is.na(diff_temp))
 sub$avg_temp2 <- sub$avg_temp^2
 sub$diff_temp2 <- sub$diff_temp^2
 
-library(brms)
+
 
 fit <- brm(diff_width ~ -1 + diff_temp + (-1+diff_temp|species), data = sub,
            chains = 4,
@@ -83,7 +89,8 @@ coefs$Species <- paste0(toupper(substr(coefs$Species,1,1)), substr(coefs$Species
 coefs <- dplyr::arrange(coefs, estimate)
 coefs$Speciesf <- factor(coefs$Species, levels = coefs$Species)  
 
-p1 <- ggplot(coefs, aes(Speciesf, estimate, col=Corr)) + 
+p1 <- dplyr::filter(coefs, Speciesf %in% c("Pacific grenadier","Giant grenadier") == FALSE) %>%
+ggplot(aes(Speciesf, estimate, col=Corr)) + 
   geom_hline(aes(yintercept=0), col="red", alpha=0.5) + 
   geom_linerange(aes(ymin=lo95, ymax=hi95), col="grey70") +
   geom_linerange(aes(ymin=lo95, ymax=hi95)) + 
@@ -91,8 +98,10 @@ p1 <- ggplot(coefs, aes(Speciesf, estimate, col=Corr)) +
   coord_flip() + 
   theme_bw() + 
   ylab(expression(paste(Delta, "Niche width (",degree,"C)"))) + xlab("") + 
-  scale_color_gradient2()
+  scale_color_gradient2() + 
+  labs(color = "Correlation")
 
+ggsave(p1, file="plots/Figure_5_brms.png", height = 6, width = 6)
 
 
 # fit <- brm(width ~ (1+avg_temp|species), data = sub,

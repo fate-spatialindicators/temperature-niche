@@ -142,7 +142,7 @@ expanded_df2$Region = "Combined"
 
 combo <- rbind(expanded_df, dplyr::select(expanded_df2, -b1, -b2))
 
-combo$Region <- as.factor(combo$Region, levels = c("BC","COW","GOA"))
+combo$Region <- factor(combo$Region, levels = c("BC","COW","GOA"))
 
 d <- dplyr::filter(combo, Region!="Combined")
 d$Region <- factor(d$Region, levels = c("GOA","BC","COW"))
@@ -195,13 +195,42 @@ ranges <- dplyr::filter(species_table, !is.na(diff)) %>%
   dplyr::arrange(diff)
 ranges$species = factor(ranges$species, levels = ranges$species)
 
+basesize <- 8
 g4 <- ggplot(ranges, aes(species, mid)) + 
   #geom_vline(aes(xintercept=0)) + 
-  geom_linerange(aes(ymin=lo,ymax=hi), col=viridis(1), size=1.5) + 
-  ylab("Celsius") + 
+  geom_linerange(aes(ymin=lo,ymax=hi), col=viridis(1), size=1.3) + 
+  ylab("Temperature (°C)") + 
   xlab("") + 
   coord_flip() + 
-  theme_bw() + 
+  theme_bw(base_size=basesize) + 
   theme(text = element_text(size=15))
 ggsave(g4, file = "plots/Ranges_fig_foreccwo.png")
 
+d = data.frame(x = seq(-3,3,by=0.1))
+a = 0.8
+b = 0
+c = -0.1
+d$y = a + b*d$x + c*d$x*d$x
+
+text_size=2
+parabola = ggplot(d, aes(x+4,y)) + 
+  geom_line(col="darkblue",size=1.3,alpha=0.3) + 
+  ylab("Estimated effect") + 
+  xlab("Temperature (°C)") +
+  geom_point(data = data.frame(x=c(-2.83,0,2.83),y=c(0,0,0)), col="darkblue",size=2) + 
+  #geom_text(data = data.frame(x=-3,y=0.03), label="(a)", size=text_size) + 
+  #geom_text(data = data.frame(x=2.83-0.17,y=0.03), label="(c)", size=text_size) +
+  #geom_text(data = data.frame(x=-0.17,y=0.03), label="(b)", size=text_size) + 
+  #geom_text(data = data.frame(x=-0.17,y=0.73), label="(e)") + 
+  #geom_text(data = data.frame(x=-0.17,y=0.83), label="(d)") + 
+  geom_line(data = data.frame(x = c(-2.83,2.83), y = c(0,0)), col="darkblue",linetype="dashed") +
+  #geom_line(data = data.frame(x = c(0,1), y = c(0.7,0.7)), col="darkblue",linetype="dashed") +
+  geom_line(data = data.frame(x = c(0,0), y = c(0,0.8)), col="darkblue",linetype="dashed") +
+  theme_bw() + 
+  theme(text = element_text(size=8))
+library(patchwork)
+
+g5 <- g4 + theme(text = element_text(size=8))
+parabola + g5 + plot_layout(widths = c(1,1), heights = c(1,1)) +
+  plot_annotation(tag_levels = "A", tag_prefix = "(", tag_suffix = ")")
+ggsave("plots/Combined_parabola_ranges.png")

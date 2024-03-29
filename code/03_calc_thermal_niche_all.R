@@ -4,24 +4,24 @@ library(sp)
 
 set.seed(1234)
 
-df_wc <- readRDS("output/wc/models.RDS")
-df_goa <- readRDS("output/goa/models.RDS")
-df_bc <- readRDS("output/bc/models.RDS")
-# filter only models that have depth
-df_wc <- dplyr::mutate(df_wc, id = 1:nrow(df_wc)) %>% 
-  dplyr::filter(depth_effect==TRUE)
-df_goa <- dplyr::mutate(df_goa, id = 1:nrow(df_goa)) %>% 
-  dplyr::filter(depth_effect==TRUE)
-df_bc <- dplyr::mutate(df_bc, id = 1:nrow(df_bc)) %>% 
-  dplyr::filter(depth_effect==TRUE)
-# 'pacific spiny dogfish' in wc data
-# 'spiny dogfish' in goa data
-# 'north pacific spiny dogfish' in bc data
-df_wc$species = as.character(df_wc$species)
-df_bc$species = tolower(as.character(df_bc$species))
-df_goa$species = tolower(as.character(df_goa$species))
-df_wc$species[which(df_wc$species=="pacific spiny dogfish")] = "north pacific spiny dogfish"
-df_goa$species[which(df_goa$species=="spiny dogfish")] = "north pacific spiny dogfish"
+# df_wc <- readRDS("output/wc/models.RDS")
+# df_goa <- readRDS("output/goa/models.RDS")
+# df_bc <- readRDS("output/bc/models.RDS")
+# # filter only models that have depth
+# df_wc <- dplyr::mutate(df_wc, id = 1:nrow(df_wc)) %>% 
+#   dplyr::filter(depth_effect==TRUE)
+# df_goa <- dplyr::mutate(df_goa, id = 1:nrow(df_goa)) %>% 
+#   dplyr::filter(depth_effect==TRUE)
+# df_bc <- dplyr::mutate(df_bc, id = 1:nrow(df_bc)) %>% 
+#   dplyr::filter(depth_effect==TRUE)
+# # 'pacific spiny dogfish' in wc data
+# # 'spiny dogfish' in goa data
+# # 'north pacific spiny dogfish' in bc data
+# df_wc$species = as.character(df_wc$species)
+# df_bc$species = tolower(as.character(df_bc$species))
+# df_goa$species = tolower(as.character(df_goa$species))
+# df_wc$species[which(df_wc$species=="pacific spiny dogfish")] = "north pacific spiny dogfish"
+# df_goa$species[which(df_goa$species=="spiny dogfish")] = "north pacific spiny dogfish"
 
 # species table
 species_table <- read.csv("species_table.csv")
@@ -31,7 +31,11 @@ species_table = dplyr::mutate(species_table,
                               WC = ifelse(WC=="x",1,0),
                               n_regions = GOA + BC + WC) %>%
   dplyr::filter(n_regions > 1)
- 
+spp <- readRDS("output/spp_for_brms.rds")
+# filter out the 30 spp used in paper
+spp <- spp[-which(spp == "Pacific ocean perch")]
+spp <- c(spp, "Longspine thornyhead")
+species_table <- dplyr::filter(species_table, species %in% tolower(spp))
 
 mu_logdepth <- 5.21517
 sd_logdepth <- 0.8465829
@@ -98,39 +102,50 @@ for (i in 1:nrow(species_table)) {
   spp <- df_wc$id[which(df_wc$species==this_species)]
   pred_df_wc <- NULL
   
-  fit <- readRDS(file = paste0("output/all/", this_species, ".rds"))
-  fit <- fit[[4]]
+  # get the best fit model
+  aic_table <- read.csv("combined_table.csv", header=TRUE)
+  best_model <- which.min(aic_table[i,9:13])
+  
+  fit <- readRDS(file = paste0("output/all/", this_species, "_model",(best_model-1),".rds"))
   
   if(class(fit) != "try-error") {
     
   if(length(spp) > 0) {
     #fit <- readRDS(file = paste0("output/wc/model_", spp, ".rds"))
     # make predictions -- response not link space
-    pred_df_wc <- predict(fit, newdata = dplyr::filter(pred_temp_wc, year %in% unique(fit$data$year))) # , type="response")
+    newdata = dplyr::filter(pred_temp_wc, year %in% unique(fit$data$year))
+    newdata$scaled_enviro <- (newdata$enviro - mean(fit$data$enviro)) / sd(fit$data$enviro)
+    newdata$scaled_enviro2 <- newdata$scaled_enviro ^ 2
+    pred_df_wc <- predict(fit, newdata = newdata) # , type="response")
     pred_df_wc <- ungroup(pred_df_wc) %>% dplyr::select(year, depth, enviro, Area_km2, est)
+    pred_df_wc$region <- "COW"
   }
   
   # GOA
   spp <- df_goa$id[which(df_goa$species==this_species)]
   pred_df_goa <- NULL
   if(length(spp) > 0) {
-    #fit <- readRDS(file = paste0("output/goa/model_", spp, ".rds"))
-    # make predictions -- response not link space
-    pred_df_goa <- predict(fit, newdata = dplyr::filter(pred_temp_goa, year %in% unique(fit$data$year))) # , type="response")
+    newdata = dplyr::filter(pred_temp_goa, year %in% unique(fit$data$year))
+    newdata$scaled_enviro <- (newdata$enviro - mean(fit$data$enviro)) / sd(fit$data$enviro)
+    newdata$scaled_enviro2 <- newdata$scaled_enviro ^ 2
+    pred_df_goa <- predict(fit, newdata = newdata) 
     pred_df_goa <- ungroup(pred_df_goa) %>% dplyr::select(year, depth, enviro, Area_km2, est)
+    pred_df_goa$region <- "GOA"
   }
   
   # BC
   spp <- df_bc$id[which(df_bc$species==this_species)]
   pred_df_bc <- NULL
   if(length(spp) > 0) {
-    #fit <- readRDS(file = paste0("output/bc/model_", spp, ".rds"))
-    # make predictions -- response not link space
-    pred_df_bc <- predict(fit, newdata = dplyr::filter(pred_temp_bc, year %in% unique(fit$data$year))) # , type="response")
+    newdata = dplyr::filter(pred_temp_bc, year %in% unique(fit$data$year))
+    newdata$scaled_enviro <- (newdata$enviro - mean(fit$data$enviro)) / sd(fit$data$enviro)
+    newdata$scaled_enviro2 <- newdata$scaled_enviro ^ 2
+    pred_df_bc <- predict(fit, newdata = newdata) # , type="response")
     pred_df_bc <- ungroup(pred_df_bc) %>% dplyr::select(year, depth, enviro, Area_km2, est)
+    pred_df_bc$region <- "BC"
   }  
   
-  # combine the 
+  # combine these 
   use_goa = FALSE
   if(!is.null(pred_df_wc)) {
     combined <- pred_df_wc
@@ -151,6 +166,13 @@ for (i in 1:nrow(species_table)) {
       use_goa <- TRUE
     }
   }
+  
+  p_summary <- dplyr::group_by(combined, year, region) %>%
+    dplyr::summarise(sum = sum(exp(est))/1000) %>%
+    dplyr::group_by(year) %>%
+    dplyr::mutate(year_tot = sum(sum), p = sum/year_tot) %>%
+    dplyr::select(year, region, p)
+  p_summary$spp <- this_species
   
   # if using GOA data, apply to the same set of years
   totarea <- wc_area$tot_km2[1] + bc_area$tot_km2[1]
@@ -211,11 +233,13 @@ for (i in 1:nrow(species_table)) {
   
   if (i == 1) {
     all_temp <- sampled_temp_year
+    all_p <- p_summary
   } else {
     all_temp <- rbind(all_temp, sampled_temp_year)
+    all_p <- rbind(all_p, p_summary)
   }
   } # end if 
 
 }
-
+saveRDS(all_p, "output/all_proportions_combined.rds")
 saveRDS(all_temp, "output/temp_niche_combined.rds")

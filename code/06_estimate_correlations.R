@@ -1,4 +1,6 @@
 library(tidyr)
+library(ggplot2)
+library(ggcorrplot)
 
 temp_index = readRDS("output/temp_index_wc.rds")
 df = readRDS(paste0("output/temp_niche_","wc",".rds"))
@@ -67,3 +69,33 @@ df = pivot_wider(df, names_from=region, values_from=rho)
 
 df$species = paste0(toupper(substr(df$species,1,1)), 
                     substr(df$species,2,nchar(df$species)))
+
+
+df <- dplyr::arrange(df, species)
+
+goa <- df[,c("species","GOA")]
+names(goa)[2] <- "Corr"
+bc <- df[,c("species","BC")]
+names(bc)[2] <- "Corr"
+cow <- df[,c("species","COW")]
+names(cow)[2] <- "Corr"
+goa$region <- "GOA"
+bc$region <- "BC"
+cow$region <- "COW"
+df <- rbind(goa, bc, cow)
+  
+df$species <- factor(df$species, levels = rev(unique(df$species)))
+df$region <- factor(df$region, levels = c("GOA","BC","COW"))
+
+# filter the 30 species that are occuring in 2_regions
+spp_for_brms <- readRDS("~/Documents/Github projects/consonants-static/output/spp_for_brms.rds")
+
+dplyr::filter(df, !is.na(Corr), species %in% spp_for_brms) %>%
+ggplot(aes(region, species, col = Corr)) + 
+  geom_point() + 
+  scale_color_gradient2() + 
+  ylab("") + xlab("") + 
+  theme_bw() + 
+  theme(axis.text.y = element_text(size=6))
+ggsave("plots/derived_correlations.png")  
+

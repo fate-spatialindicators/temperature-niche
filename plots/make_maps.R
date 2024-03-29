@@ -29,6 +29,7 @@ goa$yday <- lubridate::yday(goa$date)
 names <- table(c(names(goa), names(dat), names(cow)))
 names <- names(which(names==3))
 goa = goa[,which(names(goa) %in% names)]
+# add survey
 dat = dat[,which(names(dat) %in% names)]
 dat$survey <- "BC"
 cow = cow[,which(names(cow) %in% names)]
@@ -48,8 +49,8 @@ dat_utm <- spTransform(
 # convert back from sp object to data frame
 dat <- as.data.frame(dat_utm)
 dat <- dplyr::rename(dat,
-  longitude = longitude_dd,
-  latitude = latitude_dd
+  longitude = coords.x1,
+  latitude = coords.x2
 )
 
 dat <- dplyr::filter(dat, !is.na(temp), !is.na(depth))
@@ -106,7 +107,7 @@ coast <- suppressWarnings(suppressMessages(
 utm_zone10 <- 3157
 coast_proj <- sf::st_transform(coast, crs = utm_zone10)
 
-survey <- dplyr::filter(dat, year == 2015) %>%
+survey <- dplyr::filter(dat, year %in% c(2015,2016)) %>%
   dplyr::rename(Survey = survey)
 
 survey$Survey <- factor(survey$Survey, levels = c("GOA","BC","COW"))
@@ -118,7 +119,7 @@ g1 <- ggplot(coast_proj) + geom_sf(fill = "grey70") +
   geom_point(data = survey, aes(longitude*1000, latitude*1000, col=Survey), alpha=0.5, 
              size=0.3) + 
   scale_color_viridis(begin=0.2, end=0.8, discrete=TRUE, option="magma") + 
-  xlim(-2556215, 1000000) + 
+  xlim(-2556215, 680000) + 
   ylim(3587346, 6995173)
 ggsave(g1, file="all_map.png")
 
@@ -137,7 +138,7 @@ ggplot(aes(log(depth), temp, col = Survey)) +
 
 library(cowplot)
 combo <- ggdraw(g1) + 
-  draw_plot(g2, x = 0.18, y = 0.11, width = 0.5, height = 0.4)
+  draw_plot(g2, x = 0.305, y = 0.13, width = 0.38, height = 0.4)
 ggsave("plots/Figure_combined_map_inset.png")
 
 

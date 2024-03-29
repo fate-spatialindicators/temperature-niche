@@ -1,6 +1,6 @@
 # devtools::install_github("pbs-assess/sdmTMB", "quadratic")
 # devtools::install_github("pbs-assess/gfplot")
-library(sdmTMB)
+library(sdmTMB) # version 0.1.4.9004
 library(dplyr)
 library(sp)
 library(lubridate)
