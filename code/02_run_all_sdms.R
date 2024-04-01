@@ -85,18 +85,18 @@ for (i in 1:nrow(species_table)) {
   )
   spde <- make_mesh(sub, c("X", "Y"), mesh = inla_mesh)
   
-  priors <- sdmTMBpriors(
-    matern_s = pc_matern(
-      range_gt = 50, range_prob = 0.05, #A value one expects the range is greater than with 1 - range_prob probability.
-      sigma_lt = 25, sigma_prob = 0.05 #A value one expects the marginal SD (sigma_O or sigma_E internally) is less than with 1 - sigma_prob probability.
-    ),
-    matern_st = pc_matern(
-      range_gt = 50, range_prob = 0.05,
-      sigma_lt = 25, sigma_prob = 0.05
-    ),
-    ar1_rho = normal(0.7,0.1),
-    tweedie_p = normal(1.5,0.2)
-  )
+  #priors <- sdmTMBpriors(
+  #  matern_s = pc_matern(
+  #    range_gt = 50, range_prob = 0.05, #A value one expects the range is greater than with 1 - range_prob probability.
+  #    sigma_lt = 25, sigma_prob = 0.05 #A value one expects the marginal SD (sigma_O or sigma_E internally) is less than with 1 - sigma_prob probability.
+  #  ),
+  #  matern_st = pc_matern(
+  #    range_gt = 50, range_prob = 0.05,
+  #    sigma_lt = 25, sigma_prob = 0.05
+  #  ),
+  #  ar1_rho = normal(0.7,0.1),
+  #  tweedie_p = normal(1.5,0.2)
+  #)
   # refactor to avoid identifiability errors
   sub$region <- as.factor(as.character(sub$region))
 
@@ -115,7 +115,7 @@ for (i in 1:nrow(species_table)) {
     spatiotemporal = "rw",
     control = sdmTMBcontrol(normalize = TRUE,
                             multiphase = TRUE, 
-                            newton_loops = 1),
+                            newton_loops = 2),
     extra_time = (2003:2021)[which(2003:2021 %in% unique(sub$year) == FALSE)]
   )
   
@@ -133,7 +133,8 @@ for (i in 1:nrow(species_table)) {
     spatial = "on",
     spatiotemporal = "rw",
     control = sdmTMBcontrol(normalize = TRUE,
-                            multiphase = TRUE),
+                            multiphase = TRUE,
+                           newton_loops = 2),
     extra_time = (2003:2021)[which(2003:2021 %in% unique(sub$year) == FALSE)]
   )
   saveRDS(fit, file = paste0("output/all/", this_species, "_model2.rds"))
@@ -150,7 +151,8 @@ for (i in 1:nrow(species_table)) {
     spatial = "on",
     spatiotemporal = "rw",
     control = sdmTMBcontrol(normalize = TRUE,
-                            multiphase = TRUE),
+                            multiphase = TRUE,
+                           newton_loops = 2),
     extra_time = (2003:2021)[which(2003:2021 %in% unique(sub$year) == FALSE)]
   )
   saveRDS(fit, file = paste0("output/all/", this_species, "_model3.rds"))
@@ -167,7 +169,8 @@ for (i in 1:nrow(species_table)) {
     spatial = "on",
     spatiotemporal = "rw",
     control = sdmTMBcontrol(normalize = TRUE,
-                            multiphase = TRUE),
+                            multiphase = TRUE,
+                           newton_loops = 2),
     extra_time = (2003:2021)[which(2003:2021 %in% unique(sub$year) == FALSE)]
   )
   saveRDS(fit, file = paste0("output/all/", this_species, "_model4.rds"))
@@ -184,14 +187,15 @@ for (i in 1:nrow(species_table)) {
     spatial = "on",
     spatiotemporal = "rw",
     control = sdmTMBcontrol(normalize = TRUE,
-                            multiphase = TRUE),
+                            multiphase = TRUE,
+                           newton_loops = 2),
     extra_time = (2003:2021)[which(2003:2021 %in% unique(sub$year) == FALSE)]
   )
   saveRDS(fit, file = paste0("output/all/", this_species, "_model5.rds"))
 }
   
 aic_table = matrix(NA, nrow(species_table), 5)
-for(i in 6:nrow(species_table)) {
+for(i in 1:nrow(species_table)) {
   for(j in 1:5) {
     this_species = species_table$species[i]
     fit <- readRDS(file = paste0("output/all/", this_species, "_model",j,".rds"))
