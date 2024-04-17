@@ -26,6 +26,7 @@ temp_index = dplyr::group_by(temp_indx, year) %>%
 
 summaries$species[which(summaries$species == "North pacific spiny dogfish")] <- "Spiny dogfish"
 
+summaries$region <- as.factor(summaries$region)
 levels(summaries$region) <- c("GOA","BC","COW")
 g1 <- ggplot(summaries, aes(year, mean_enviro, fill=region, col = region)) +
   #facet_wrap(~species, scale = "free") +
