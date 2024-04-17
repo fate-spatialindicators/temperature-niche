@@ -76,8 +76,8 @@ g1 = ggplot(dplyr::filter(index, Depth != "All", year>=2003), aes(year, est, fil
   facet_wrap(~region, ncol = 1, scale="free_y") + 
   xlab("Year") + 
   labs(colour = "Depth (m)", fill = "Depth (m)") + 
-  scale_fill_viridis_d(option="magma", begin=0.2, end=0.7) + 
-  scale_color_viridis_d(option="magma", begin=0.2, end=0.7) + 
+  scale_fill_viridis_d(option="mako", begin=0, end=0.8) + 
+  scale_color_viridis_d(option="mako", begin=0.2, end=0.8) + 
   ylab(expression(paste("Temperature index ", degree, "C"))) + 
   theme_bw() + 
   theme(strip.background =element_rect(fill="white"),
