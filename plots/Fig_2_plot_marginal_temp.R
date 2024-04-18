@@ -32,7 +32,7 @@ for (i in 1:nrow(species_table)) {
   aic_table <- read.csv("combined_table.csv", header=TRUE)
   best_model <- which.min(aic_table[i,9:13])
   
-  fit <- readRDS(file = paste0("output/all/", this_species, "_model",(best_model-1),".rds"))
+  fit <- readRDS(file = paste0("output/all/", this_species, "_model",(best_model),".rds"))
   
   newdata = expand.grid(region = unique(fit$data$region),
              year = 2003,
@@ -63,6 +63,14 @@ pred_all$names <- sapply(pred_all$species, function(name) {
 })
 pred_all$Region <- pred_all$region
 levels(pred_all$Region) <- c("GOA","BC","COW")
+
+# join in max/min temp ranges for each species
+temp_ranges <- readRDS("output/temp_ranges.rds")
+temp_ranges <- dplyr::rename(temp_ranges, little_species = species)
+pred_all$little_species <- tolower(pred_all$species)
+pred_all <- dplyr::left_join(pred_all, temp_ranges)
+
+pred_all <- dplyr::filter(pred_all, enviro >= min_temp, enviro <= max_temp)
 
 ggplot(pred_all, aes(enviro, est_non_rf, col=Region)) + 
   geom_line() + 

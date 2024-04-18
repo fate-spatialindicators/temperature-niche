@@ -27,6 +27,11 @@ dat <- rbind(dplyr::select(bc, year, survey, species, scientific_name,
 dat$species <- tolower(dat$species)
 dat$species[which(dat$species%in%c("spiny dogfish","pacific spiny dogfish"))] = "north pacific spiny dogfish"
 
+temp_ranges <- dplyr::group_by(dat, species, region) %>%
+  dplyr::filter(cpue_kg_km2 > 0) %>%
+  dplyr::summarize(min_temp = min(temp,na.rm=T), max_temp = max(temp,na.rm=T))
+saveRDS(temp_ranges, "output/temp_ranges.rds")
+
 # filter common years
 dat <- dplyr::filter(dat, year>=2003)
 
