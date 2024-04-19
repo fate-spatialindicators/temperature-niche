@@ -82,24 +82,8 @@ map_data <- rnaturalearth::ne_countries(
   returnclass = "sf", country = c("United States of America","Canada","Mexico"))
 # Crop the polygon for plotting and efficiency:
 # st_bbox(map_data) # find the rough coordinates
-coast <- suppressWarnings(suppressMessages(
-  st_crop(map_data,
-          c(xmin = -140, ymin = 30, xmax = -117, ymax = 49))))
-
 #utm_zone9 <- 3156
 utm_zone10 <- 3157
-coast_proj <- sf::st_transform(coast, crs = utm_zone10)
-
-survey <- dplyr::filter(dat, year == 2015, survey == "COW")
-
-g1 <- ggplot(coast_proj) + geom_sf(fill = "antiquewhite") + 
-  theme_bw() + 
-  labs(x = "Longitude", y = "Latitude") + 
-  geom_point(data = survey, aes(longitude*1000, latitude*1000), alpha=0.5, 
-             size=0.5, col=viridis(3, end=0.8)[2])
-
-ggsave(g1, file="cow_map.png")
-
 
 coast <- suppressWarnings(suppressMessages(
   st_crop(map_data,
