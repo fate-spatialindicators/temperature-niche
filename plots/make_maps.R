@@ -103,7 +103,7 @@ ggsave(g1, file="cow_map.png")
 
 coast <- suppressWarnings(suppressMessages(
   st_crop(map_data,
-          c(xmin = -160, ymin = 30, xmax = -117, ymax = 60))))
+          c(xmin = -170, ymin = 30, xmax = -115, ymax = 80))))
 utm_zone10 <- 3157
 coast_proj <- sf::st_transform(coast, crs = utm_zone10)
 
@@ -121,32 +121,17 @@ g1 <- ggplot(coast_proj) + geom_sf(fill = "grey70") +
   scale_color_viridis(begin=0.2, end=0.8, discrete=TRUE, option="magma") + 
   xlim(-2556215, 680000) + 
   ylim(3587346, 6995173)
-ggsave(g1, file="all_map.png")
 
 g2 <- dplyr::filter(survey, depth >= 50) %>%
-ggplot(aes(log(depth), temp, col = Survey)) + 
-  geom_point(alpha=0.4, size=0.2) + 
-  scale_color_viridis(begin=0.2, end=0.8, discrete=TRUE, option="magma") + 
-  theme_bw(base_size=8) + 
-  xlab("Ln (depth)") + 
-  ylab("Temperature (°C)")
-
-# library(patchwork)
-# combined_plot <- g1 + g2
-# combined_plot + plot_layout(widths = c(2,1), heights = c(2,4))
-# ggsave("test.png")
+  arrange(Survey) %>%
+  ggplot(aes(log(depth), temp, col = Survey)) + 
+    geom_point(alpha=0.6, size=1.5) + 
+    scale_color_viridis(begin=0.2, end=0.8, discrete=TRUE, option="magma") + 
+    theme_bw(base_size=10) +
+    xlab("Ln (depth)") + 
+    ylab("Temperature (°C)")
 
 library(cowplot)
 combo <- ggdraw(g1) + 
-  draw_plot(g2, x = 0.305, y = 0.13, width = 0.38, height = 0.4)
+  draw_plot(g2, x = 0.19, y = 0.08, width = 0.5, height = 0.59)
 ggsave("plots/Figure_combined_map_inset.png")
-
-
-survey$Density = survey$temp - mean(survey$temp)
-g1 <- ggplot(coast_proj) + geom_sf(fill = "antiquewhite") + 
-  theme_bw() + 
-  labs(x = "Longitude", y = "Latitude") + 
-  geom_point(data = survey, aes(longitude*1000, latitude*1000, col=Density), alpha=1, 
-             size=0.5) + 
-  scale_color_gradient2()
-ggsave(g1, file="all_map_demo.png")
