@@ -103,8 +103,8 @@ g1 <- ggplot(coast_proj) + geom_sf(fill = "grey70") +
   geom_point(data = survey, aes(longitude*1000, latitude*1000, col=Survey), alpha=0.5, 
              size=0.3) + 
   scale_color_viridis(begin=0.2, end=0.8, discrete=TRUE, option="magma") + 
-  xlim(-2556215, 680000) + 
-  ylim(3587346, 6995173)
+  xlim(-2556215, 1050000) + 
+  ylim(3540000, 6995173)
 
 g2 <- dplyr::filter(survey, depth >= 50) %>%
   arrange(Survey) %>%
@@ -117,5 +117,5 @@ g2 <- dplyr::filter(survey, depth >= 50) %>%
 
 library(cowplot)
 combo <- ggdraw(g1) + 
-  draw_plot(g2, x = 0.19, y = 0.08, width = 0.5, height = 0.59)
-ggsave("plots/Figure_combined_map_inset.png")
+  draw_plot(g2, x = 0.155, y = 0.08, width = 0.5, height = 0.59)
+ggsave("plots/Figure_2_combined_map_inset.png")
