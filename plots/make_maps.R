@@ -87,7 +87,7 @@ utm_zone10 <- 3157
 
 coast <- suppressWarnings(suppressMessages(
   st_crop(map_data,
-          c(xmin = -170, ymin = 30, xmax = -115, ymax = 80))))
+          c(xmin = -175, ymin = 25, xmax = -105, ymax = 80))))
 utm_zone10 <- 3157
 coast_proj <- sf::st_transform(coast, crs = utm_zone10)
 
