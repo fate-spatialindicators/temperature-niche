@@ -72,6 +72,7 @@ pred_all <- dplyr::left_join(pred_all, temp_ranges)
 
 pred_all <- dplyr::filter(pred_all, enviro >= min_temp, enviro <= max_temp)
 
+pred_all$names[which(pred_all$names == "North pacific spiny dogfish")] = "Pacific Spiny Dogfish"
 ggplot(pred_all, aes(enviro, est_non_rf, col=Region)) + 
   geom_line() + 
   scale_color_viridis_d(option="magma",begin=0.2, end=0.7) + 

@@ -41,7 +41,7 @@ temp_index = dplyr::group_by(temp_indx, year) %>%
   dplyr::summarise(m = mean(est)) %>%
   dplyr::filter(!is.na(m), year>=2003, year %in% goa_index$year)
 
-summaries$species[which(summaries$species == "North pacific spiny dogfish")] <- "Spiny dogfish"
+summaries$species[which(summaries$species == "North pacific spiny dogfish")] <- "Pacific Spiny Dogfish"
 
 g1 <- ggplot(dplyr::filter(summaries, year>=2003, species %in% c("Giant grenadier","Pacific grenadier") == FALSE), aes(year, mean_enviro)) +
   #facet_wrap(~species, scale = "free") +

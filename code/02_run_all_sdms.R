@@ -205,7 +205,8 @@ for(i in 1:nrow(species_table)) {
     this_species = species_table$species[i]
     fit <- readRDS(file = paste0("output/all/", this_species, "_model",j,".rds"))
     s <- sanity(fit, silent=TRUE)
-    if(s$hessian_ok + s$eigen_values_ok + s$nlminb_ok == 3) aic_table[i,j] = AIC(fit)
+    #if(s$hessian_ok + s$eigen_values_ok + s$nlminb_ok == 3) aic_table[i,j] = AIC(fit)
+    if(s$all_ok) aic_table[i,j] = AIC(fit)
   }
 }
 write.csv(aic_table, "aic_table.csv")

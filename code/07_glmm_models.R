@@ -88,7 +88,7 @@ coefs <- dplyr::left_join(coefs, rho)
 coefs$Species <- paste0(toupper(substr(coefs$Species,1,1)), substr(coefs$Species,2,nchar(coefs$Species)))
 coefs <- dplyr::arrange(coefs, estimate)
 
-coefs$Species[which(coefs$Species=="North pacific spiny dogfish")] = "North Pacific spiny dogfish"
+coefs$Species[which(coefs$Species=="North pacific spiny dogfish")] = "Pacific Spiny Dogfish"
 
 coefs$Speciesf <- factor(coefs$Species, levels = coefs$Species)  
 
