@@ -27,6 +27,11 @@ dat <- rbind(dplyr::select(bc, year, survey, species, scientific_name,
 dat$species <- tolower(dat$species)
 dat$species[which(dat$species%in%c("spiny dogfish","pacific spiny dogfish"))] = "north pacific spiny dogfish"
 
+temp_ranges <- dplyr::group_by(dat, species, region) %>%
+  dplyr::filter(cpue_kg_km2 > 0) %>%
+  dplyr::summarize(min_temp = min(temp,na.rm=T), max_temp = max(temp,na.rm=T))
+saveRDS(temp_ranges, "output/temp_ranges.rds")
+
 # filter common years
 dat <- dplyr::filter(dat, year>=2003)
 
@@ -101,7 +106,7 @@ for (i in 1:nrow(species_table)) {
   sub$region <- as.factor(as.character(sub$region))
 
   # Model 1
-  formula = "cpue_kg_km2 ~ 1 + logdepth + logdepth2"
+  formula = "cpue_kg_km2 ~ -1 + region + logdepth + logdepth2"
 
   fit <- sdmTMB(
     formula = as.formula(formula),
@@ -123,7 +128,7 @@ for (i in 1:nrow(species_table)) {
   
   # Model 2
   fit <- sdmTMB(
-    cpue_kg_km2 ~ 1 + scaled_enviro + scaled_enviro2 + logdepth + logdepth2,
+    cpue_kg_km2 ~ -1 + region + scaled_enviro + scaled_enviro2 + logdepth + logdepth2,
     mesh = spde,
     time = "year",
     family = tweedie(link = "log"),
@@ -141,7 +146,7 @@ for (i in 1:nrow(species_table)) {
   
   # Model 3
   fit <- sdmTMB(
-    cpue_kg_km2 ~ 1 + scaled_enviro + scaled_enviro2 + scaled_enviro:region + scaled_enviro2:region + logdepth + logdepth2,
+    cpue_kg_km2 ~ -1 + region + scaled_enviro + scaled_enviro2 + scaled_enviro:region + scaled_enviro2:region + logdepth + logdepth2,
     mesh = spde,
     time = "year",
     family = tweedie(link = "log"),
@@ -159,7 +164,7 @@ for (i in 1:nrow(species_table)) {
 
   # Model 4:Constant temp, depth region interaction
   fit <- sdmTMB(
-    cpue_kg_km2 ~ 1 + scaled_enviro + scaled_enviro2 + region:logdepth + region:logdepth2,
+    cpue_kg_km2 ~ -1 + region + scaled_enviro + scaled_enviro2 + region:logdepth + region:logdepth2,
     mesh = spde,
     time = "year",
     family = tweedie(link = "log"),
@@ -177,7 +182,7 @@ for (i in 1:nrow(species_table)) {
   
   # Model 5:variable enviro and depth interactions
   fit <- sdmTMB(
-    cpue_kg_km2 ~ 1 + region:scaled_enviro + region:scaled_enviro2 + region:logdepth + region:logdepth2,
+    cpue_kg_km2 ~ -1 + region + region:scaled_enviro + region:scaled_enviro2 + region:logdepth + region:logdepth2,
     mesh = spde,
     time = "year",
     family = tweedie(link = "log"),
@@ -194,17 +199,18 @@ for (i in 1:nrow(species_table)) {
   saveRDS(fit, file = paste0("output/all/", this_species, "_model5.rds"))
 }
   
-aic_table = matrix(NA, nrow(species_table), 5)
-for(i in 1:nrow(species_table)) {
-  for(j in 1:5) {
-    this_species = species_table$species[i]
-    fit <- readRDS(file = paste0("output/all/", this_species, "_model",j,".rds"))
-    s <- sanity(fit, silent=TRUE)
-    if(s$hessian_ok + s$eigen_values_ok + s$nlminb_ok == 3) aic_table[i,j] = AIC(fit)
-  }
-}
-write.csv(aic_table, "aic_table.csv")
-write.csv(cbind(species_table, aic_table), "combined_table.csv")
+# aic_table = matrix(NA, nrow(species_table), 5)
+# for(i in 1:nrow(species_table)) {
+#   for(j in 1:5) {
+#     this_species = species_table$species[i]
+#     fit <- readRDS(file = paste0("output/all/", this_species, "_model",j,".rds"))
+#     s <- sanity(fit, silent=TRUE)
+#     #if(s$hessian_ok + s$eigen_values_ok + s$nlminb_ok == 3) aic_table[i,j] = AIC(fit)
+#     if(s$all_ok) aic_table[i,j] = AIC(fit)
+#   }
+# }
+# write.csv(aic_table, "aic_table.csv")
+# write.csv(cbind(species_table, aic_table), "combined_table.csv")
 
 combined <- read.csv("combined_table.csv")
 
